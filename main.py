@@ -5,6 +5,10 @@ import time
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.pretty import Pretty
+from rich.panel import Panel
 from llm import complete_chat
 from tools.edit_file import edit_file
 from tools.list_files import list_files
@@ -60,6 +64,9 @@ Use this JSON object to respond:
         "content":  PROMPT
     }
 
+# Create global console instance
+console = Console()
+
 def main(project_dir=None):
     if project_dir:
         # Change to the project directory if provided
@@ -69,19 +76,19 @@ def main(project_dir=None):
         get_agent_system_prompt()
     ]
     while True:
-        user_input = input("Enter a message: ")
+        user_input = console.input("[bold green]Enter a message:[/] ")
         messages.append({"role": "user", "content":  user_input})
         terminate = False
         while True:
             response = complete_chat(messages=messages, response_format={
                 "type": "json_object"
             }, model="openai/gpt-4.1")
-            print(response, flush=True)
+            console.print(Markdown(response))
             try:
                 response_json = json.loads(response)
                 messages.append({"role": "assistant", "content": [{"type": "text", "text": response}]})
             except json.JSONDecodeError:
-                print("Invalid JSON response", flush=True)
+                console.print("[bold red]Invalid JSON response[/]", style="error")
                 sys.exit(1)
                 continue
 
@@ -103,11 +110,21 @@ def main(project_dir=None):
                     elif tool_call["name"] == "exec_shell":
                         tool_result = exec_shell(tool_call["parameters"]["command"])
                     messages.append({"role": "assistant", "content": [{"type": "text", "text": json.dumps(tool_result)}]})
-                    print(tool_result, flush=True)
-
                     if tool_call["name"] == "talk_to_user":
+                        # Check if message looks like markdown
+                        if any(marker in tool_result for marker in ['#', '*', '_', '`']):
+                            console.print(Markdown(tool_result))
+                        else:
+                            console.print(Panel(tool_result))
                         terminate = True
                         break
+                    elif isinstance(tool_result, dict) and "formatted_output" in tool_result:
+                        console.print(Markdown(tool_result["formatted_output"]))
+                    elif isinstance(tool_result, str):
+                        console.print(Markdown(tool_result))
+                    else:
+                        console.print(Pretty(tool_result))
+
             if terminate:
                 break
 

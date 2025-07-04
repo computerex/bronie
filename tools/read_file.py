@@ -67,14 +67,44 @@ def read_file(filename, start_line=None, end_line=None):
         # Extract the requested lines
         selected_lines = lines[start_idx:end_idx]
         
-        # Format the output with line numbers
-        result = [f"File: {filename} (Lines {start_line or 1}-{end_line or total_lines} of {total_lines})"]
-        result.append("-" * 80)
-        
-        for i, line in enumerate(selected_lines, start=start_idx + 1):
-            result.append(f"{i:4d}: {line}")
+        # Prepare the output dictionary
+        if start_line is None and end_line is None:
+            return {
+                'filename': filename,
+                'total_lines': total_lines,
+                'lines': [{'line_number': i+1, 'text': line} for i, line in enumerate(lines)]
+            }
+        else:
+            return {
+                'filename': filename,
+                'total_lines': total_lines,
+                'start_line': start_idx + 1,
+                'end_line': end_idx,
+                'lines': [{'line_number': i, 'text': line} 
+                         for i, line in enumerate(selected_lines, start=start_idx + 1)]
+            }
             
-        return ''.join(result)
-        
     except Exception as e:
         return f"Error reading file: {e}"
+
+
+def format_file_contents(file_data):
+    """
+    Format file contents as a rich Table for display
+    
+    Args:
+        file_data (dict): Dictionary returned by read_file()
+        
+    Returns:
+        rich.table.Table: Formatted table for display
+    """
+    from rich.table import Table
+    
+    table = Table(title=f"File: {file_data['filename']}")
+    table.add_column("Line", justify="right", style="cyan")
+    table.add_column("Content", style="white")
+    
+    for line in file_data['lines']:
+        table.add_row(str(line['line_number']), line['text'].rstrip('\n'))
+        
+    return table
