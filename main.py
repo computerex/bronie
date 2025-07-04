@@ -12,6 +12,7 @@ from tools.grep_search import grep_search
 from tools.read_file import read_file
 from tools.search_files import search_files
 from tools.talk_to_user import talk_to_user
+from tools.exec_shell import exec_shell
 
 load_dotenv()
 
@@ -36,6 +37,8 @@ Available tools:
     - Parameters: regex_pattern
 - talk_to_user: Talk to the user, should be the final tool call and will terminate the execution and cede control to the user.
     - Parameters: message
+- exec_shell: Execute a shell command (requires user approval before execution)
+    - Parameters: command
 
 You are responsible for all the work. Use available tools to explore the codebase and make changes.
 
@@ -97,6 +100,8 @@ def main(project_dir=None):
                         tool_result = search_files(tool_call["parameters"]["regex_pattern"])
                     elif tool_call["name"] == "talk_to_user":
                         tool_result = talk_to_user(tool_call["parameters"]["message"])
+                    elif tool_call["name"] == "exec_shell":
+                        tool_result = exec_shell(tool_call["parameters"]["command"])
                     messages.append({"role": "assistant", "content": [{"type": "text", "text": json.dumps(tool_result)}]})
                     print(tool_result, flush=True)
 
