@@ -11,6 +11,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.pretty import Pretty
 from rich.panel import Panel
+from rich.text import Text
 from llm import complete_chat, complete_chat_stream
 from tools.edit_file import edit_file
 from tools.list_files import list_files
@@ -19,6 +20,7 @@ from tools.read_file import read_file
 from tools.search_files import search_files
 from tools.talk_to_user import talk_to_user
 from tools.exec_shell import exec_shell
+from tools.clipboard_image import get_clipboard_image, is_image_in_clipboard
 from prompt_toolkit import prompt
 from prompt_toolkit.styles import Style
 
@@ -88,6 +90,7 @@ def count_tokens(messages):
 def main(project_dir=None):
     last_interrupt_time = 0
     multiline_mode = [False]
+    attached_images = []
     
     if project_dir:
         os.chdir(project_dir)
@@ -101,6 +104,11 @@ def main(project_dir=None):
             token_count = count_tokens(messages)
             console.print(f"[cyan]Token count:[/] {token_count}")
             mode_text = "[green]Multiline[/]" if multiline_mode[0] else "[blue]Single-line[/]"
+            
+            # Show attached images if any
+            if attached_images:
+                console.print(f"[magenta]Attached images:[/] {len(attached_images)}")
+            
             console.print(Panel(
                 "[bold]Enter your message below[/]\n"
                 f"Current mode: {mode_text}\n"
@@ -108,6 +116,8 @@ def main(project_dir=None):
                 "- [bold]:m[/bold] to toggle input mode\n"
                 "- [bold]:clear[/bold] to reset message history\n"
                 "- [bold]:e <shell command>[/bold] to execute a shell command directly\n"
+                "- [bold]:image[/bold] to paste image from clipboard\n"
+                "- [bold]:drop[/bold] to remove the last attached image\n"
                 "- [bold]:end[/bold] on a new line when finished in multiline mode",
                 title="Input Instructions",
                 border_style="green"
@@ -140,7 +150,30 @@ def main(project_dir=None):
                     
                     if line_stripped == ":clear":
                         messages = [get_agent_system_prompt()]
+                        attached_images = []
                         console.print("[green]Message history cleared[/]")
+                        mode_switched = True
+                        break
+                    
+                    if line_stripped == ":image":
+                        if is_image_in_clipboard():
+                            base64_data, mime_type = get_clipboard_image()
+                            if base64_data:
+                                attached_images.append(base64_data)
+                                console.print(Text("📸 Image from clipboard attached", style="green"))
+                            else:
+                                console.print(Text("❌ Failed to get image from clipboard", style="red"))
+                        else:
+                            console.print(Text("❌ No image found in clipboard", style="red"))
+                        mode_switched = True
+                        break
+                    
+                    if line_stripped == ":drop":
+                        if attached_images:
+                            attached_images.pop()
+                            console.print(Text("🗑️ Last image removed", style="yellow"))
+                        else:
+                            console.print(Text("❌ No images to remove", style="red"))
                         mode_switched = True
                         break
                         
@@ -174,7 +207,29 @@ def main(project_dir=None):
                 continue
             
             user_input = "\n".join(lines)
-            messages.append({"role": "user", "content": user_input})
+            
+            # Create message content with text and images
+            message_content = []
+            message_content.append({"type": "text", "text": user_input})
+            
+            # Add images to the message content if any
+            for img_base64 in attached_images:
+                message_content.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/png;base64,{img_base64}"}
+                })
+            
+            # Add message with text and images
+            if attached_images:
+                messages.append({"role": "user", "content": message_content})
+                console.print(Text("📤 Message sent with attached images", style="green"))
+            else:
+                messages.append({"role": "user", "content": user_input})
+            
+            # Clear attached images after sending
+            current_images = attached_images.copy()  # Make a copy for use in this iteration
+            attached_images = []
+            
             terminate = False
             while True:
                 # Try streaming first for better user experience, fall back to regular completion if needed
@@ -206,7 +261,11 @@ def main(project_dir=None):
                     for tool_call in response_json["tool_calls"]:
                         #print(tool_call, flush=True)
                         if tool_call["name"] == "edit_file":
-                            tool_result = edit_file(tool_call["parameters"]["filename"], tool_call["parameters"]["editing_instructions"])
+                            tool_result = edit_file(
+                                tool_call["parameters"]["filename"], 
+                                tool_call["parameters"]["editing_instructions"],
+                                current_images if current_images else None
+                            )
                         elif tool_call["name"] == "list_files":
                             tool_result = list_files(tool_call["parameters"].get("directory_path", "."))
                         elif tool_call["name"] == "grep_search":
