@@ -1,9 +1,44 @@
 import base64
 import os
 from difflib import unified_diff
-from llm import complete_chat
+from llm import complete_chat, complete_chat_stream
 from coders.editblock_coder import get_edits, apply_edits
 
+
+EDIT_PROMPT = """Act as an expert software developer.
+Always use best practices when coding.
+Respect and use existing conventions, libraries, etc that are already present in the code base.
+Take requests for changes to the supplied code.
+
+Once you understand the request you MUST:
+
+1. Think step-by-step and explain the needed changes in a few short sentences.
+
+2. Extract and return ONLY the *SEARCH/REPLACE blocks* from the input, maintaining their exact format:
+   ```
+   <<<<<<< SEARCH
+   [exact lines to find in current code]
+   =======
+   [new code to replace those lines]
+   >>>>>>> REPLACE
+   ```
+
+3. If the input already contains properly formatted *SEARCH/REPLACE blocks*, simply return them as-is.
+4. If the input contains a plan or explanation, extract only the *SEARCH/REPLACE blocks* from it.
+5. If no blocks are found, create appropriate blocks based on the instructions.
+
+Important:
+- Only return the *SEARCH/REPLACE blocks*, nothing else
+- Keep each block focused and minimal
+- Make sure SEARCH sections EXACTLY match existing code - this means:
+  * Every space, tab, and newline must match exactly
+  * Indentation must be preserved exactly as it appears in the original code
+  * Line endings must match exactly
+  * No extra or missing whitespace is allowed
+- For moving code, use two blocks: one to remove from old location, one to insert in new location
+- Each block should be self-contained and not depend on other blocks
+- If a block depends on another block, combine them into a single block
+- When copying code into SEARCH sections, copy it exactly as it appears - do not try to clean up or reformat the whitespace"""
 
 def get_image_mime_type(base64_data):
     """Detects the MIME type of an image from its base64 encoded data."""
@@ -37,75 +72,7 @@ def get_image_mime_type(base64_data):
     
 def get_thinking(instruction, code, images=None, **kwargs):        
     messages = [
-        {"role": "user", "content": [{"type": "text", "text": \
-f"""Act as an expert software developer.
-Always use best practices when coding.
-Respect and use existing conventions, libraries, etc that are already present in the code base.
-Take requests for changes to the supplied code.
-
-Once you understand the request you MUST:
-
-1. Think step-by-step and explain the needed changes in a few short sentences.
-
-2. Extract and return ONLY the *SEARCH/REPLACE blocks* from the input, maintaining their exact format:
-   ```
-   <<<<<<< SEARCH
-   [exact lines to find in current code]
-   =======
-   [new code to replace those lines]
-   >>>>>>> REPLACE
-   ```
-
-3. If the input already contains properly formatted *SEARCH/REPLACE blocks*, simply return them as-is.
-4. If the input contains a plan or explanation, extract only the *SEARCH/REPLACE blocks* from it.
-5. If no blocks are found, create appropriate blocks based on the instructions.
-
-Important:
-- Only return the *SEARCH/REPLACE blocks*, nothing else
-- Keep each block focused and minimal
-- Make sure SEARCH sections EXACTLY match existing code - this means:
-  * Every space, tab, and newline must match exactly
-  * Indentation must be preserved exactly as it appears in the original code
-  * Line endings must match exactly
-  * No extra or missing whitespace is allowed
-- For moving code, use two blocks: one to remove from old location, one to insert in new location
-- Each block should be self-contained and not depend on other blocks
-- If a block depends on another block, combine them into a single block
-- When copying code into SEARCH sections, copy it exactly as it appears - do not try to clean up or reformat the whitespace"""}]},
-        {"role": "user", "content": [{"type": "text", "text": f"""Change factorial() to use math.factorial"""}]},
-        {"role": "assistant", "content": [{"type": "text", "text": \
-f"""Here are the *SEARCH/REPLACE blocks*:
-
-```
-<<<<<<< SEARCH
-from flask import Flask
-=======
-import math
-from flask import Flask
->>>>>>> REPLACE
-```
-
-```
-<<<<<<< SEARCH
-def factorial(n):
-    "compute factorial"
-
-    if n == 0:
-        return 1
-    else:
-        return n * factorial(n-1)
-
-=======
->>>>>>> REPLACE
-```
-
-```
-<<<<<<< SEARCH
-    return str(factorial(n))
-=======
-    return str(math.factorial(n))
->>>>>>> REPLACE
-```"""}]},
+        {"role": "user", "content": [{"type": "text", "text": EDIT_PROMPT}]},
         {"role": "user", "content": [{"type": "text", "text": f"""Code:\n{code}\n\n{instruction}"""}]}
     ]
     
@@ -159,6 +126,29 @@ def edit_file(filename, instruction, images=None):
             code = ""
 
         print(f"Instruction: {instruction}", flush=True)
+        
+        # Construct messages for the chat
+        messages = [
+            {"role": "user", "content": [{"type": "text", "text": EDIT_PROMPT}]},
+            {"role": "user", "content": [{"type": "text", "text": f"""Code:\n{code}\n\n{instruction}"""}]}
+        ]
+
+        if images:
+            for img_base64 in images:
+                # Detect the MIME type of the image
+                mime_type = get_image_mime_type(img_base64)
+                messages[-1]['content'].append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{mime_type};base64,{img_base64}"}
+                })
+        
+        # Stream the response in real-time
+        full_response = ""
+        for chunk in complete_chat_stream(messages=messages, model="anthropic/claude-3.5-sonnet"):
+            print(chunk, end="", flush=True)
+            full_response += chunk
+            
+        # Get final complete response for processing
         response = get_thinking(instruction, code, images, model="anthropic/claude-3.5-sonnet")
         edits = get_edits(response)
         new_code = apply_edits(code, edits)

@@ -19,6 +19,7 @@ from tools.read_file import read_file
 from tools.search_files import search_files
 from tools.talk_to_user import talk_to_user
 from tools.exec_shell import exec_shell
+import keyboard
 
 load_dotenv()
 
@@ -85,6 +86,7 @@ def count_tokens(messages):
 
 def main(project_dir=None):
     last_interrupt_time = [0]  # Using list to allow modification in handler
+    multiline_mode = [False]  # Using list to allow modification in handler
     
     def interrupt_handler(signum, frame):
         current_time = time.time()
@@ -107,9 +109,12 @@ def main(project_dir=None):
         # Display current token count
         token_count = count_tokens(messages)
         console.print(f"[cyan]Token count:[/] {token_count}")
+        mode_text = "[green]Multiline[/]" if multiline_mode[0] else "[blue]Single-line[/]"
         console.print(Panel(
             "[bold]Enter your message below[/]\n"
-            "[dim]Type [bold]:end[/bold] on a new line when finished[/]",
+            f"Current mode: {mode_text}\n"
+            "[dim]Type [bold]:t[/bold] to toggle input mode\n"
+            "Type [bold]:end[/bold] on a new line when finished in multiline mode",
             title="Input Instructions",
             border_style="green"
         ))
@@ -118,9 +123,21 @@ def main(project_dir=None):
         while True:
             try:
                 line = console.input("")
-                if line.strip() == ":end":
+                if line.strip() == ":t":  # Simple text command to toggle mode
+                    multiline_mode[0] = not multiline_mode[0]
+                    if multiline_mode[0]:
+                        console.print("[green]Switched to multiline mode[/]")
+                    else:
+                        console.print("[blue]Switched to single-line mode[/]")
+                    continue
+                
+                if line.strip() == ":end" and multiline_mode[0]:
                     break
+                
                 lines.append(line)
+                if not multiline_mode[0]:  # In single-line mode, break after first line
+                    break
+                    
             except KeyboardInterrupt:
                 console.print("\n[yellow]Input cleared. Start typing again:[/]")
                 lines = []
@@ -178,11 +195,11 @@ def main(project_dir=None):
                         tool_result = exec_shell(tool_call["parameters"]["command"])
                     messages.append({"role": "assistant", "content": [{"type": "text", "text": json.dumps(tool_result)}]})
                     if tool_call["name"] == "talk_to_user":
-                        # Check if message looks like markdown
-                        if any(marker in tool_result for marker in ['#', '*', '_', '`']):
-                            console.print(Markdown(tool_result))
-                        else:
-                            console.print(Panel(tool_result))
+                        if isinstance(tool_result, dict) and "type" in tool_result and "content" in tool_result:
+                            if tool_result["type"] == "markdown":
+                                console.print(Markdown(tool_result["content"]))
+                            elif tool_result["type"] == "panel":
+                                console.print(Panel(tool_result["content"]))
                         terminate = True
                         break
                     elif isinstance(tool_result, dict) and "formatted_output" in tool_result:
