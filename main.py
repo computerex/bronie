@@ -1,5 +1,6 @@
 import base64
 import json
+import signal
 import sys
 import time
 import tiktoken
@@ -10,7 +11,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.pretty import Pretty
 from rich.panel import Panel
-from llm import complete_chat
+from llm import complete_chat, complete_chat_stream
 from tools.edit_file import edit_file
 from tools.list_files import list_files
 from tools.grep_search import grep_search
@@ -83,6 +84,18 @@ def count_tokens(messages):
     return num_tokens
 
 def main(project_dir=None):
+    last_interrupt_time = [0]  # Using list to allow modification in handler
+    
+    def interrupt_handler(signum, frame):
+        current_time = time.time()
+        if current_time - last_interrupt_time[0] < 1:  # Double interrupt within 1 second
+            console.print("\n[red]Double interrupt detected - exiting[/]")
+            sys.exit(0)
+        last_interrupt_time[0] = current_time
+        raise KeyboardInterrupt
+    
+    signal.signal(signal.SIGINT, interrupt_handler)
+    
     if project_dir:
         # Change to the project directory if provided
         os.chdir(project_dir)
@@ -94,14 +107,50 @@ def main(project_dir=None):
         # Display current token count
         token_count = count_tokens(messages)
         console.print(f"[cyan]Token count:[/] {token_count}")
-        user_input = console.input("[bold green]Enter a message:[/] ")
-        messages.append({"role": "user", "content":  user_input})
+        console.print(Panel(
+            "[bold]Enter your message below[/]\n"
+            "[dim]Type [bold]:end[/bold] on a new line when finished[/]",
+            title="Input Instructions",
+            border_style="green"
+        ))
+        
+        lines = []
+        while True:
+            try:
+                line = console.input("")
+                if line.strip() == ":end":
+                    break
+                lines.append(line)
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Input cleared. Start typing again:[/]")
+                lines = []
+                continue
+        
+        if not lines:  # Handle empty input
+            console.print("[yellow]Empty input, please try again[/]")
+            continue
+            
+        user_input = "\n".join(lines)
+        messages.append({"role": "user", "content": user_input})
         terminate = False
         while True:
-            response = complete_chat(messages=messages, response_format={
-                "type": "json_object"
-            }, model="openai/gpt-4.1")
-            console.print(Markdown(response))
+            # Try streaming first for better user experience, fall back to regular completion if needed
+            try:
+                response = ""
+                for chunk in complete_chat_stream(messages=messages, response_format={
+                    "type": "json_object"
+                }, model="openai/gpt-4.1"):
+                    if chunk:
+                        sys.stdout.write(chunk)
+                        sys.stdout.flush()
+                        response += chunk
+                print()  # New line after streaming completes
+            except Exception as e:
+                console.print("[yellow]Streaming failed, falling back to regular completion[/]")
+                response = complete_chat(messages=messages, response_format={
+                    "type": "json_object"
+                }, model="openai/gpt-4.1")
+                console.print(Markdown(response))
             try:
                 response_json = json.loads(response)
                 messages.append({"role": "assistant", "content": [{"type": "text", "text": response}]})
