@@ -9,9 +9,20 @@ def exec_shell(command):
         command (str): The shell command to execute
         
     Returns:
-        str: Command output (stdout + stderr) if approved and executed
-             Message indicating abortion if not approved
+        dict: Dictionary containing:
+            - stdout (str): Standard output from command
+            - stderr (str): Standard error from command 
+            - formatted_output (str): Combined output with whitespace stripped
     """
-    print(f"Executing shell command: {command}", flush=True)
     result = subprocess.run(command, shell=True, capture_output=True, text=True)
-    return f"{result.stdout}\n{result.stderr}".strip()
+    
+    # Strip whitespace but preserve line structure
+    stdout = result.stdout.rstrip()
+    stderr = result.stderr.rstrip()
+    combined = f"{stdout}\n{stderr}".strip()
+    
+    return {
+        'stdout': stdout,
+        'stderr': stderr,
+        'formatted_output': combined
+    }

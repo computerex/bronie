@@ -107,6 +107,7 @@ def main(project_dir=None):
                 "[dim]Available commands:\n"
                 "- [bold]:m[/bold] to toggle input mode\n"
                 "- [bold]:clear[/bold] to reset message history\n"
+                "- [bold]:e <shell command>[/bold] to execute a shell command directly\n"
                 "- [bold]:end[/bold] on a new line when finished in multiline mode",
                 title="Input Instructions",
                 border_style="green"
@@ -120,6 +121,16 @@ def main(project_dir=None):
                     line = prompt('')
                     
                     line_stripped = line.strip()
+                    if line_stripped.startswith(":e "):
+                        command = line_stripped[3:].strip()  # Extract everything after ':e '
+                        result = exec_shell(command)
+                        if isinstance(result, dict) and "formatted_output" in result:
+                            console.print(Panel(result["formatted_output"], title="Shell Output", highlight=True))
+                        else:
+                            console.print(Panel(str(result), title="Shell Output", highlight=True))
+                        mode_switched = True
+                        break
+                        
                     if line_stripped == ":m":
                         multiline_mode[0] = not multiline_mode[0]
                         mode_name = "multiline" if multiline_mode[0] else "single-line"
@@ -218,7 +229,7 @@ def main(project_dir=None):
                             terminate = True
                             break
                         elif isinstance(tool_result, dict) and "formatted_output" in tool_result:
-                            console.print(Markdown(tool_result["formatted_output"]))
+                            console.print(Panel(tool_result["formatted_output"], title="Shell Output", highlight=True))
                         elif isinstance(tool_result, str):
                             console.print(Markdown(tool_result))
                         else:
