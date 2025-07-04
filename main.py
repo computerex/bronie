@@ -104,8 +104,10 @@ def main(project_dir=None):
             console.print(Panel(
                 "[bold]Enter your message below[/]\n"
                 f"Current mode: {mode_text}\n"
-                "[dim]Type [bold]:t[/bold] to toggle input mode\n"
-                "Type [bold]:end[/bold] on a new line when finished in multiline mode",
+                "[dim]Available commands:\n"
+                "- [bold]:m[/bold] to toggle input mode\n"
+                "- [bold]:clear[/bold] to reset message history\n"
+                "- [bold]:end[/bold] on a new line when finished in multiline mode",
                 title="Input Instructions",
                 border_style="green"
             ))
@@ -117,10 +119,17 @@ def main(project_dir=None):
                     # Use simple prompt for each line
                     line = prompt('')
                     
-                    if line.strip() == ":t":
+                    line_stripped = line.strip()
+                    if line_stripped == ":m":
                         multiline_mode[0] = not multiline_mode[0]
                         mode_name = "multiline" if multiline_mode[0] else "single-line"
                         console.print(f"[green]Switched to {mode_name} mode[/]")
+                        mode_switched = True
+                        break
+                    
+                    if line_stripped == ":clear":
+                        messages = [get_agent_system_prompt()]
+                        console.print("[green]Message history cleared[/]")
                         mode_switched = True
                         break
                         
