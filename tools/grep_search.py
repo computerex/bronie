@@ -2,7 +2,7 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from .config import IGNORED_DIRS_GLOB
+from .config import IGNORED_DIRS_GLOB, IGNORED_DIRS
 
 from rich.table import Table
 
