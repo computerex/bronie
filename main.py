@@ -2,6 +2,7 @@ import base64
 import json
 import sys
 import time
+import tiktoken
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
@@ -67,6 +68,20 @@ Use this JSON object to respond:
 # Create global console instance
 console = Console()
 
+def count_tokens(messages):
+    encoding = tiktoken.encoding_for_model("gpt-4")
+    num_tokens = 0
+    for message in messages:
+        # Count tokens in the message content
+        if isinstance(message["content"], str):
+            num_tokens += len(encoding.encode(message["content"]))
+        elif isinstance(message["content"], list):
+            # Handle list of content (e.g., assistant responses)
+            for content in message["content"]:
+                if isinstance(content, dict) and "text" in content:
+                    num_tokens += len(encoding.encode(content["text"]))
+    return num_tokens
+
 def main(project_dir=None):
     if project_dir:
         # Change to the project directory if provided
@@ -76,6 +91,9 @@ def main(project_dir=None):
         get_agent_system_prompt()
     ]
     while True:
+        # Display current token count
+        token_count = count_tokens(messages)
+        console.print(f"[cyan]Token count:[/] {token_count}")
         user_input = console.input("[bold green]Enter a message:[/] ")
         messages.append({"role": "user", "content":  user_input})
         terminate = False

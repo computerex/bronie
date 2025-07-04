@@ -1,10 +1,12 @@
 import os
 import re
 from pathlib import Path
+from .config import IGNORED_DIRS
 
 def search_files(pattern, directory='.'):
     """
     Search for files by regex patterns.
+    Automatically ignores common dependency directories.
     
     Args:
         pattern (str): Regex pattern to match against file names
@@ -44,12 +46,17 @@ def search_files(pattern, directory='.'):
         matches = []
         
         for root, dirs, files in os.walk(abs_path):
-            # Skip hidden directories (starting with .)
-            dirs[:] = [d for d in dirs if not d.startswith('.')]
+            # Skip ignored directories
+            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in IGNORED_DIRS]
             
             for file in files:
                 if regex.search(file):
                     rel_path = os.path.relpath(os.path.join(root, file), abs_path)
+                    
+                    # Skip files in ignored directories
+                    if any(ignored in rel_path.split(os.sep) for ignored in IGNORED_DIRS):
+                        continue
+                        
                     full_path = os.path.join(root, file)
                     
                     match_result = {

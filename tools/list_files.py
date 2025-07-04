@@ -1,11 +1,6 @@
 import os
 from pathlib import Path
-
-# Common dependency and environment directories to ignore
-IGNORED_DIRS = {
-    'env', 'venv', '.env', 'node_modules', 'vendor',
-    '__pycache__', '.git', '.idea', '.vscode'
-}
+from .config import IGNORED_DIRS
 
 def count_lines(file_path):
     """

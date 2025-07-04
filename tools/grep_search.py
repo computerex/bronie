@@ -2,12 +2,14 @@ import os
 import re
 import subprocess
 from pathlib import Path
+from .config import IGNORED_DIRS_GLOB
 
 from rich.table import Table
 
 def grep_search(pattern, file_pattern="*"):
     """
-    Search for patterns in files using grep or a Python-based alternative.
+    Search for patterns in files using ripgrep or a Python-based alternative.
+    Automatically ignores common dependency directories.
     
     Args:
         pattern (str): The pattern to search for
@@ -23,38 +25,52 @@ def grep_search(pattern, file_pattern="*"):
         # Get current working directory (project directory)
         project_dir = os.getcwd()
         
-        # Try to use grep if available (Unix/Linux/Mac)
-        if os.name != 'nt':  # Not Windows
-            try:
-                cmd = ["grep", "-r", "--include", file_pattern, pattern, "."]
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-                if result.returncode in [0, 1]:  # grep returns 1 if no matches found
-                    if not result.stdout:
-                        return []
-                    matches = []
-                    for line in result.stdout.splitlines():
-                        if ':' in line:
-                            filename, rest = line.split(':', 1)
-                            if ':' in rest:
-                                line_number, line_text = rest.split(':', 1)
-                                matches.append({
-                                    'filename': filename.lstrip('./'),
-                                    'line_number': int(line_number),
-                                    'line_text': line_text.strip()
-                                })
-                    return matches
-                else:
-                    # Fall back to Python implementation if grep fails
-                    raise subprocess.SubprocessError("grep command failed")
-            except (subprocess.SubprocessError, FileNotFoundError):
-                # Fall back to Python implementation
-                pass
+        # Try to use ripgrep if available
+        try:
+            # Build ripgrep command with ignore patterns
+            cmd = [
+                "rg",
+                "--glob", file_pattern,  # File pattern
+                "--glob", IGNORED_DIRS_GLOB,  # Ignore patterns
+                "--no-heading",  # Don't group matches by file
+                "--line-number",  # Show line numbers
+                "--color", "never",  # No color codes in output
+                pattern,  # Search pattern
+                "."  # Search in current directory
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            if result.returncode in [0, 1]:  # rg returns 1 if no matches found
+                if not result.stdout:
+                    return []
+                matches = []
+                for line in result.stdout.splitlines():
+                    if ':' in line:
+                        filename, rest = line.split(':', 1)
+                        if ':' in rest:
+                            line_number, line_text = rest.split(':', 1)
+                            matches.append({
+                                'filename': filename.lstrip('./'),
+                                'line_number': int(line_number),
+                                'line_text': line_text.strip()
+                            })
+                return matches
+            else:
+                # Fall back to Python implementation if ripgrep fails
+                raise subprocess.SubprocessError("ripgrep command failed")
+        except (subprocess.SubprocessError, FileNotFoundError):
+            # Fall back to Python implementation
+            pass
                 
-        # Python-based implementation (for Windows or if grep fails)
+        # Python-based implementation (fallback)
         matches = []
         cwd = Path(project_dir)
         
         for path in cwd.rglob(file_pattern):
+            # Skip ignored directories
+            if any(ignored in str(path.parent).split(os.sep) for ignored in IGNORED_DIRS):
+                continue
+                
             if path.is_file():
                 try:
                     with open(path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -82,7 +98,7 @@ def grep_search(pattern, file_pattern="*"):
         return [{
             'filename': 'error',
             'line_number': 0,
-            'line_text': f"Error during grep search: {e}"
+            'line_text': f"Error during search: {e}"
         }]
 
 def create_search_results_table(results):
