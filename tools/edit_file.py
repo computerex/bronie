@@ -3,6 +3,7 @@ import os
 from difflib import unified_diff
 from llm import complete_chat, complete_chat_stream
 from coders.editblock_coder import get_edits, apply_edits
+from rich.console import Console
 
 
 EDIT_PROMPT = """Act as an expert software developer.
@@ -152,14 +153,27 @@ def edit_file(filename, instruction, images=None):
         response = get_thinking(instruction, code, images, model="anthropic/claude-3.5-sonnet")
         edits = get_edits(response)
         new_code = apply_edits(code, edits)
-        print(new_code, flush=True)
 
         if new_code != code:
-            print(f"Writing to {filepath}", flush=True)
+            diff_output = diff(code, new_code)
+            console = Console()
+            if diff_output:
+                console.print("\n[bold green]Changes:[/bold green]")
+                for line in diff_output.splitlines():
+                    if line.startswith('+'):
+                        console.print(line, style="green")
+                    elif line.startswith('-'):
+                        console.print(line, style="red")
+                    elif line.startswith('@'):
+                        console.print(line, style="yellow")
+                    else:
+                        console.print(line)
+
+            print(f"\nWriting to {filepath}", flush=True)
             with open(filepath, 'w+') as f:
                 f.write(new_code)
-            return diff(code, new_code), new_code
+            return "", ""
         else:
-            return None, new_code
+            return "", ""
     except Exception as e:
         return f"Error editing file: {e}", ""
