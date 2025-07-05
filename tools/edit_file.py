@@ -105,6 +105,11 @@ def edit_file(filename, instruction, images=None):
     Edit a file by applying changes based on natural language instructions.
     Supports both text-based editing and visual editing with attached images.
     Creates directories if they don't exist and creates new files if they don't exist.
+    The edit_file tool doesn't know about rest of code base so pass it everything necessary 
+    to make the changes as part of the instructions. You can pass code snippets, information
+    you have learnt about the project, etc. Anything that you think is relevant to the
+    changes you need to make. The generated code must be production-ready and should not
+    contain any messages or comments intended for the user.
     
     Args:
         filename (str): Relative path to the file to edit (from project directory)
