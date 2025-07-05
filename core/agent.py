@@ -1,7 +1,6 @@
 import json
 import sys
 import select
-import time
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.pretty import Pretty
@@ -10,21 +9,9 @@ from rich.text import Text
 from llm import complete_chat, complete_chat_stream, get_agent_model
 from tools.registry import dispatch_tool
 from core.input_handler import get_user_input
+from core.interrupts import handle_keyboard_interrupt
 
 console = Console()
-
-# Global timestamp for double Ctrl+C detection
-_last_interrupt_time = 0.0
-
-def _handle_keyboard_interrupt():
-    """Handle Ctrl+C; exit if pressed twice within 1 second."""
-    global _last_interrupt_time
-    current_time = time.time()
-    if current_time - _last_interrupt_time < 1:
-        console.print("\n[red]Double Ctrl+C detected - exiting[/]")
-        sys.exit(0)
-    _last_interrupt_time = current_time
-    console.print("\n[yellow]Press Ctrl+C again within 1 second to exit[/]")
 
 class Agent:
     def __init__(self, project_dir=None, get_agent_system_prompt=None):
@@ -96,7 +83,7 @@ class Agent:
                                         raise EOFError
                         print()  # New line after streaming completes
                     except KeyboardInterrupt:
-                        _handle_keyboard_interrupt()
+                        handle_keyboard_interrupt(console)
                         break  # Return control to input prompt after first Ctrl+C
                     except EOFError:
                         console.print("\n[yellow]Model response interrupted by Ctrl+D - returning to input[/]")
@@ -109,7 +96,7 @@ class Agent:
                             }, model=agent_model)
                             console.print(Markdown(response))
                         except KeyboardInterrupt:
-                            _handle_keyboard_interrupt()
+                            handle_keyboard_interrupt(console)
                             break  # Return control to input prompt after second Ctrl+C
                     
                     try:
@@ -157,12 +144,12 @@ class Agent:
                                 else:
                                     console.print(Pretty(tool_result))
                             except KeyboardInterrupt:
-                                _handle_keyboard_interrupt()
+                                handle_keyboard_interrupt(console)
                                 break  # Return control to input prompt after Ctrl+C
 
                     if terminate:
                         break
 
             except KeyboardInterrupt:
-                _handle_keyboard_interrupt()
+                handle_keyboard_interrupt(console)
                 continue  # Return to top of main loop

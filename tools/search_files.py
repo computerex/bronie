@@ -22,6 +22,7 @@ def search_files(pattern, directory='.'):
             - matches: List of dicts containing:
                 - filename: Relative file path (from search directory)
                 - matched_lines: List of dicts with line_number and line_text (if content matches found)
+            - message: Error message when status == 'error'
     """
     try:
         # Compile the regex pattern

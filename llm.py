@@ -140,7 +140,7 @@ def complete_chat_stream(model: Optional[str] = None, **kwargs) -> Iterator[str]
 
             # after streaming loop
             output_tokens_calc = _count_tokens_text(response_text)
-            from main import track_tokens
+            from token_tracker import track_tokens
             track_tokens(input_tokens_msg, output_tokens_calc)
             
             return  # Success - exit the retry loop
@@ -217,7 +217,7 @@ def complete_chat(model: Optional[str] = None, **kwargs) -> str:
             # Same for complete_chat non-streaming: after we get text_response
             input_tokens_msg = _count_tokens_messages(kwargs.get("messages", []))
             output_tokens_calc = _count_tokens_text(text_response)
-            from main import track_tokens
+            from token_tracker import track_tokens
             track_tokens(input_tokens_msg, output_tokens_calc)
             
             return text_response

@@ -1,4 +1,3 @@
-import time
 import sys
 from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
@@ -8,12 +7,11 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from ui.commands import handle_ui_command
+from core.interrupts import handle_keyboard_interrupt
 import tiktoken
+import token_tracker
 
 console = Console()
-
-# Timestamp of the last Ctrl+C to detect double-tap within 1 second
-_last_interrupt_time = 0.0
 
 # Cache encoder once for efficiency
 ENCODER = tiktoken.encoding_for_model("gpt-4")
@@ -23,7 +21,15 @@ def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, mes
     
     token_count = count_tokens(messages)
     
-    console.print(f"[cyan]Token count:[/] {token_count}")
+    # Aggregate session token usage (input/output)
+    in_tokens, out_tokens = token_tracker.get_totals()
+    total_tokens = in_tokens + out_tokens
+
+    console.print(
+        f"[cyan]Context tokens:[/] {token_count:,} "
+        f"[dim]| Session in/out:[/] {in_tokens:,}/{out_tokens:,} "
+        f"(total {total_tokens:,})"
+    )
     
     mode_text = "[green]Multiline[/]" if multiline_mode[0] else "[blue]Single-line[/]"
     
@@ -136,13 +142,7 @@ def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, mes
         console.print("[yellow]Ctrl+D pressed (no active model) – nothing to cancel[/]")
         return None, False
     except KeyboardInterrupt:
-        global _last_interrupt_time
-        current_time = time.time()
-        if current_time - _last_interrupt_time < 1:
-            console.print("\n[red]Double Ctrl+C detected - exiting[/]")
-            sys.exit(0)
-        _last_interrupt_time = current_time
-        console.print("\n[yellow]Press Ctrl+C again within 1 second to exit[/]")
+        handle_keyboard_interrupt(console)
         return None, False
 
 def count_tokens(messages):

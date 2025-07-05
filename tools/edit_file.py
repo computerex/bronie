@@ -1,7 +1,7 @@
 import base64
 import os
 from difflib import unified_diff
-from llm import complete_chat, complete_chat_stream
+from llm import complete_chat_stream
 from coders.editblock_coder import get_edits, apply_edits
 from rich.console import Console
 from tools.config import get_code_model
@@ -74,22 +74,9 @@ def get_image_mime_type(base64_data):
         # Return a default or raise a more specific error
         return 'image/png' # Defaulting to png on error
     
-def get_thinking(instruction, code, images=None, model=None, **kwargs):        
-    messages = [
-        {"role": "user", "content": [{"type": "text", "text": EDIT_PROMPT}]},
-        {"role": "user", "content": [{"type": "text", "text": f"""Code:\n{code}\n\n{instruction}"""}]}
-    ]
-    
-    if images:
-        for img_base64 in images:
-            # Detect the MIME type of the image
-            mime_type = get_image_mime_type(img_base64)
-            messages[-1]['content'].append({
-                "type": "image_url",
-                "image_url": {"url": f"data:{mime_type};base64,{img_base64}"}
-            })
-
-    return complete_chat(messages=messages, model=model, **kwargs)
+def get_thinking(*_args, **_kwargs):
+    """Deprecated placeholder kept for backward compatibility.\n    Should not be called – edit_file now uses streamed response text directly."""
+    raise RuntimeError("get_thinking is deprecated and should not be used.")
 
 def diff(a: str, b: str) -> str:
     """
