@@ -71,7 +71,7 @@ class Agent:
                         response = ""
                         for chunk in complete_chat_stream(messages=self.messages, response_format={
                             "type": "json_object"
-                        }, model=agent_model, temperature=0.0):
+                        }, model=agent_model):
                             if chunk:
                                 sys.stdout.write(chunk)
                                 sys.stdout.flush()
@@ -90,7 +90,7 @@ class Agent:
                         try:
                             response = complete_chat(messages=self.messages, response_format={
                                 "type": "json_object"
-                            }, model=agent_model, temperature=0.0)
+                            }, model=agent_model)
                             console.print(Markdown(response))
                         except KeyboardInterrupt:
                             handle_keyboard_interrupt(console)
@@ -125,7 +125,7 @@ class Agent:
                                     tool_result = dispatch_tool(tool_call["name"], **tool_call["parameters"])
                                 
                                 # Record the tool result in the conversation so the model can see it
-                                self.messages.append({"role": "assistant", "content": [{"type": "text", "text": json.dumps(tool_result)}]})
+                                self.messages.append({"role": "user", "content": [{"type": "text", "text": json.dumps(tool_result)}]})
 
                                 # If tool_result signals an error, explicitly add a readable message for the model
                                 if isinstance(tool_result, dict) and "error" in tool_result:
