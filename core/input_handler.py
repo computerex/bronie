@@ -121,22 +121,17 @@ def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, mes
                 lines = lines[:-1]
                 user_input = "\n".join(lines).rstrip()
 
+        # Process UI commands first, before any other checks
+        ui_result = handle_ui_command(user_input, context)
+        if ui_result:
+            return None, True
+
         # After removing ':end', a completely empty buffer means the user
         # pressed enter without any actual content. In that case, prompt
         # them again rather than sending an empty message.
         if not user_input.strip():
             console.print("[yellow]Empty input, please try again[/]")
             return None, False
-        
-        # Process UI commands
-        # UI commands (those starting with ':') are only evaluated when we
-        # are **not** in multiline mode, because within multiline mode any
-        # leading ':' characters should be treated as part of the actual
-        # message (except the special ':end' handled above).
-        if not multiline_mode[0]:
-            ui_result = handle_ui_command(user_input, context)
-            if ui_result:
-                return None, True
         
         return user_input, False
     
