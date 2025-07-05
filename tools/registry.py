@@ -60,16 +60,7 @@ def dispatch_tool(name: str, **kwargs) -> Any:
     
     tool_function = TOOLS[name]
     
-    # Handle parameter mapping for specific tools
-    if name == "edit_file" and "editing_instructions" in kwargs:
-        # Map editing_instructions to instruction
-        kwargs["instruction"] = kwargs.pop("editing_instructions")
-    elif name == "search_files" and "regex_pattern" in kwargs:
-        # Map regex_pattern to pattern for search_files
-        kwargs["pattern"] = kwargs.pop("regex_pattern")
-    elif name == "list_models" and "query" in kwargs:
-        # Map query to filter_str for list_models
-        kwargs["filter_str"] = kwargs.pop("query")
+    # No parameter mapping needed – tool signatures are now consistent
     
     # Get the function signature to validate parameters
     try:

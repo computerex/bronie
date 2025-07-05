@@ -100,7 +100,7 @@ def diff(a: str, b: str) -> str:
     # Join the result to form a single string
     return '\n'.join(diff_lines)
 
-def edit_file(filename, instruction, images=None):
+def edit_file(target_file, instructions, images=None):
     """
     Edit a file by applying changes based on natural language instructions.
     Supports both text-based editing and visual editing with attached images.
@@ -112,8 +112,8 @@ def edit_file(filename, instruction, images=None):
     contain any messages or comments intended for the user.
     
     Args:
-        filename (str): Relative path to the file to edit (from project directory)
-        instruction (str): Natural language description of what changes to make
+        target_file (str): Relative path to the file to edit (from project directory)
+        instructions (str): Natural language description of what changes to make
         images (list, optional): List of base64-encoded images for visual context. Defaults to None.
         
     Returns:
@@ -122,7 +122,7 @@ def edit_file(filename, instruction, images=None):
     try:
         # Ensure the path is relative to the current working directory
         # which should be the project directory set in main.py
-        filepath = os.path.join(os.getcwd(), filename)
+        filepath = os.path.join(os.getcwd(), target_file)
         
         # Create directories if they don't exist
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -133,12 +133,12 @@ def edit_file(filename, instruction, images=None):
         except FileNotFoundError:
             code = ""
 
-        print(f"Instruction: {instruction}", flush=True)
+        print(f"Instructions: {instructions}", flush=True)
         
         # Construct messages for the chat
         messages = [
             {"role": "user", "content": [{"type": "text", "text": EDIT_PROMPT}]},
-            {"role": "user", "content": [{"type": "text", "text": f"""Code:\n{code}\n\n{instruction}"""}]}
+            {"role": "user", "content": [{"type": "text", "text": f"""Code:\n{code}\n\n{instructions}"""}]}
         ]
 
         if images:

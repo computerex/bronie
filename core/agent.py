@@ -169,7 +169,7 @@ class Agent:
                                 # If tool_result signals an error, explicitly add a readable message for the model
                                 if isinstance(tool_result, dict) and "error" in tool_result:
                                     error_note = f"Tool call '{tool_call['name']}' failed: {tool_result['error']}"
-                                    self.messages.append({"role": "assistant", "content": error_note})
+                                    self.messages.append({"role": "user", "content": error_note})
                                     console.print(Text(error_note, style="yellow"))
 
                                 if tool_call["name"] == "talk_to_user":
@@ -193,10 +193,10 @@ class Agent:
                                 # Catch-all for unexpected tool errors and inform both console and conversation
                                 err_msg = f"Tool call '{tool_call['name']}' raised an exception: {e}"
                                 console.print(Text(err_msg, style="red"))
-                                self.messages.append({"role": "assistant", "content": err_msg})
+                                self.messages.append({"role": "user", "content": err_msg})
 
                     else: # no tool calls
-                        self.messages.append({"role": "assistant", "content": "Please respond strictly in the JSON format specified in the system prompt."})
+                        self.messages.append({"role": "user", "content": "Please respond strictly in the JSON format specified in the system prompt."})
                         console.print("Please respond strictly in the JSON format specified in the system prompt: {\"tool_calls\": [...]}")
                         continue
                     if terminate:

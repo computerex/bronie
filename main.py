@@ -44,7 +44,7 @@ To begin, use the `list_files` tool to understand the project structure.
 
 Always use relative paths from the project directory when working with files.
 
-Note: The edit_file tool doesn't know about rest of code base so pass it everything necessary to make the changes as part of the instructions. You can pass code snippets, information you have learnt about the project, etc. Anything that you think is relevant to the changes you need to make.
+Note: The edit_file tool doesn't know about rest of code base so pass it everything necessary to make the changes as part of the instructions. You must pass all of the user's instructions to the edit_file tool.
 
 Available tools:
 {chr(10).join(tool_descriptions)}
