@@ -4,6 +4,7 @@ from difflib import unified_diff
 from llm import complete_chat, complete_chat_stream
 from coders.editblock_coder import get_edits, apply_edits
 from rich.console import Console
+from tools.config import get_code_model
 
 
 EDIT_PROMPT = """Act as an expert software developer.
@@ -71,7 +72,7 @@ def get_image_mime_type(base64_data):
         # Return a default or raise a more specific error
         return 'image/png' # Defaulting to png on error
     
-def get_thinking(instruction, code, images=None, **kwargs):        
+def get_thinking(instruction, code, images=None, model=None, **kwargs):        
     messages = [
         {"role": "user", "content": [{"type": "text", "text": EDIT_PROMPT}]},
         {"role": "user", "content": [{"type": "text", "text": f"""Code:\n{code}\n\n{instruction}"""}]}
@@ -86,7 +87,7 @@ def get_thinking(instruction, code, images=None, **kwargs):
                 "image_url": {"url": f"data:{mime_type};base64,{img_base64}"}
             })
 
-    return complete_chat(messages=messages, **kwargs)
+    return complete_chat(messages=messages, model=model, **kwargs)
 
 def diff(a: str, b: str) -> str:
     """
@@ -143,14 +144,17 @@ def edit_file(filename, instruction, images=None):
                     "image_url": {"url": f"data:{mime_type};base64,{img_base64}"}
                 })
         
+                # Get the user-selected code model
+        code_model = get_code_model()
+        
         # Stream the response in real-time
         full_response = ""
-        for chunk in complete_chat_stream(messages=messages, model="anthropic/claude-3.5-sonnet"):
+        for chunk in complete_chat_stream(messages=messages, model=code_model):
             print(chunk, end="", flush=True)
             full_response += chunk
-            
+        
         # Get final complete response for processing
-        response = get_thinking(instruction, code, images, model="anthropic/claude-3.5-sonnet")
+        response = get_thinking(instruction, code, images, model=code_model)
         edits = get_edits(response)
         new_code = apply_edits(code, edits)
 

@@ -1,0 +1,1 @@
+# Core package for main application logic 

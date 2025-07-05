@@ -1,0 +1,4 @@
+{
+  "agent_model": "deepseek/deepseek-chat-v3-0324",
+  "code_model": "anthropic/claude-3.5-sonnet"
+}
