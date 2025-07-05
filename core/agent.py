@@ -71,7 +71,7 @@ class Agent:
                         response = ""
                         for chunk in complete_chat_stream(messages=self.messages, response_format={
                             "type": "json_object"
-                        }, model=agent_model):
+                        }, model=agent_model, temperature=0.0):
                             if chunk:
                                 sys.stdout.write(chunk)
                                 sys.stdout.flush()
@@ -90,7 +90,7 @@ class Agent:
                         try:
                             response = complete_chat(messages=self.messages, response_format={
                                 "type": "json_object"
-                            }, model=agent_model)
+                            }, model=agent_model, temperature=0.0)
                             console.print(Markdown(response))
                         except KeyboardInterrupt:
                             handle_keyboard_interrupt(console)
@@ -156,6 +156,10 @@ class Agent:
                                 console.print(Text(err_msg, style="red"))
                                 self.messages.append({"role": "assistant", "content": err_msg})
 
+                    else: # no tool calls
+                        self.messages.append({"role": "assistant", "content": "Please respond strictly in the JSON format specified in the system prompt."})
+                        console.print("Please respond strictly in the JSON format specified in the system prompt: {\"tool_calls\": [...]}")
+                        continue
                     if terminate:
                         break
 
