@@ -1,4 +1,5 @@
 import sys
+import os
 from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.styles import Style
@@ -13,10 +14,30 @@ import token_tracker
 
 console = Console()
 
+def get_input_instructions_panel(mode_text, project_dir):
+    return Panel(
+        "[bold]Enter your message below[/]\n"
+        f"Current mode: {mode_text}\n"
+        f"Project directory: {os.path.abspath(project_dir) if project_dir else os.path.abspath(os.getcwd())}\n"
+        "[dim]Available commands:\n"
+        "- [bold]:m[/bold] to toggle input mode\n"
+        "- [bold]:clear[/bold] to reset message history\n"
+        "- [bold]:e <shell command>[/bold] to execute a shell command directly\n"
+        "- [bold]:image[/bold] to paste image from clipboard\n"
+        "- [bold]:drop[/bold] to remove the last attached image\n"
+        "- [bold]:models[/bold] to show current model settings\n"
+        "- [bold]:list-models[/bold] to see available OpenRouter models\n"
+        "- [bold]:set-agent-model <model>[/bold] to change agent model\n"
+        "- [bold]:set-code-model <model>[/bold] to change code editing model\n"
+        "- [bold]:end[/bold] on a new line when finished in multiline mode",
+        title="Input Instructions",
+        border_style="green"
+    )
+
 # Cache encoder once for efficiency
 ENCODER = tiktoken.encoding_for_model("gpt-4")
 
-def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, messages):
+def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, messages, project_dir=None):
     """Enhanced user input processing with prompt_toolkit multiline support"""
     
     token_count = count_tokens(messages)
@@ -37,23 +58,7 @@ def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, mes
     if attached_images:
         console.print(f"[magenta]Attached images:[/] {len(attached_images)}")
     
-    console.print(Panel(
-        "[bold]Enter your message below[/]\n"
-        f"Current mode: {mode_text}\n"
-        "[dim]Available commands:\n"
-        "- [bold]:m[/bold] to toggle input mode\n"
-        "- [bold]:clear[/bold] to reset message history\n"
-        "- [bold]:e <shell command>[/bold] to execute a shell command directly\n"
-        "- [bold]:image[/bold] to paste image from clipboard\n"
-        "- [bold]:drop[/bold] to remove the last attached image\n"
-        "- [bold]:models[/bold] to show current model settings\n"
-        "- [bold]:list-models[/bold] to see available OpenRouter models\n"
-        "- [bold]:set-agent-model <model>[/bold] to change agent model\n"
-        "- [bold]:set-code-model <model>[/bold] to change code editing model\n"
-        "- [bold]:end[/bold] on a new line when finished in multiline mode",
-        title="Input Instructions",
-        border_style="green"
-    ))
+    console.print(get_input_instructions_panel(mode_text, project_dir))
     
     # -------------------------------------------------------------------
     # Key bindings

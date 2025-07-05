@@ -71,7 +71,8 @@ class Agent:
                     self.multiline_mode, 
                     self.attached_images, 
                     self.get_agent_system_prompt, 
-                    self.messages
+                    self.messages,
+                    self.project_dir
                 )
                 
                 if mode_switched:
