@@ -6,6 +6,7 @@ from tools.exec_shell import exec_shell
 from tools.clipboard_image import get_clipboard_image, is_image_in_clipboard
 from tools.config import set_agent_model, set_code_model, get_agent_model, get_code_model
 from llm import list_openrouter_models
+import token_state
 
 console = Console()
 
@@ -27,10 +28,15 @@ def handle_mode_toggle(context):
     return True
 
 def handle_clear_command(context):
-    """Handle :clear command - reset message history"""
-    context["messages"] = [context["get_agent_system_prompt"]()]
+    """Handle :clear command - reset message history and token counts"""
+    # Clear the *existing* messages list in-place so any references held
+    # elsewhere (e.g. Agent.self.messages) are updated too.
+    msgs = context["messages"]
+    msgs.clear()
+    msgs.append(context["get_agent_system_prompt"]())
     context["attached_images"] = []
-    console.print("[green]Message history cleared[/]")
+    token_state.reset_token_counts()  # Reset token counts
+    console.print("[green]Message history and token counts cleared[/]")
     return True
 
 def handle_image_command(context):
