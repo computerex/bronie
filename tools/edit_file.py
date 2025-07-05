@@ -6,7 +6,6 @@ from coders.editblock_coder import get_edits, apply_edits
 from rich.console import Console
 from tools.config import get_code_model
 import sys
-import select
 
 
 EDIT_PROMPT = """Act as an expert software developer.
@@ -149,17 +148,14 @@ def edit_file(filename, instruction, images=None):
                 # Get the user-selected code model
         code_model = get_code_model()
         
-        # Stream the response in real-time and allow user interruption via Ctrl+D (EOF) or Ctrl+C
+        # Stream the response in real-time and allow user interruption via Ctrl+C
         try:
             response_text = ""
             for chunk in complete_chat_stream(messages=messages, model=code_model):
                 print(chunk, end="", flush=True)
                 response_text += chunk
-                # Non-blocking check if the user pressed Ctrl+D
-                if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-                    data = sys.stdin.read(1)
-                    if data == '' or data == '\x04':  # EOF or Ctrl+D
-                        raise EOFError
+                # Note: Ctrl+D detection removed as it's not compatible with Windows
+                # Users can use Ctrl+C to interrupt instead
         except (EOFError, KeyboardInterrupt):
             # Gracefully handle user interrupt and cancel the edit operation
             print("\n[Stream interrupted by user – edit cancelled]", flush=True)
