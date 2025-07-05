@@ -51,7 +51,7 @@ def robust_json_parse(text: str):
         {"role": "system", "content": FIX_PROMPT},
         {"role": "user", "content": stripped}
     ], model="gpt-4.1-mini", response_format={"type": "json_object"})
-    print('Using gpt-4.1-mini to fix JSON')
+    print('Fixing model JSON...')
     return json.loads(json_fixed)
 
 class Agent:
