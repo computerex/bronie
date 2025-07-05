@@ -4,7 +4,8 @@ from rich.markdown import Markdown
 
 def talk_to_user(message):
     """
-    Communicate with the user by returning message in a panel format.
+    Communicate with the user by returning message in a panel format. Cedes control back to the user.
+    Should be the last tool in the chain since it will return control to the user.
     
     Args:
         message (str): Message to send to the user

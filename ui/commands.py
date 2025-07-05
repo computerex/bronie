@@ -5,7 +5,8 @@ from rich.table import Table
 from tools.exec_shell import exec_shell
 from tools.clipboard_image import get_clipboard_image, is_image_in_clipboard
 from tools.config import set_agent_model, set_code_model, get_agent_model, get_code_model
-from llm import list_openrouter_models
+# Avoid importing llm at module level to prevent circular dependencies.
+# We'll import list_openrouter_models lazily within handle_list_models_command when needed.
 import token_state
 
 console = Console()
@@ -35,7 +36,6 @@ def handle_clear_command(context):
     msgs.clear()
     msgs.append(context["get_agent_system_prompt"]())
     context["attached_images"] = []
-    token_state.reset_token_counts()  # Reset token counts
     console.print("[green]Message history and token counts cleared[/]")
     return True
 
@@ -105,6 +105,8 @@ def handle_show_models_command(line_stripped, context):
 def handle_list_models_command(line_stripped, context):
     """Handle :list-models command - show available OpenRouter models"""
     if line_stripped == ":list-models":
+        # Import here to avoid circular import issues during application startup
+        from llm import list_openrouter_models
         try:
             models = list_openrouter_models()
             
