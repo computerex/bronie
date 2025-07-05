@@ -40,6 +40,8 @@ def get_agent_system_prompt():
     PROMPT = f"""
 You are a software engineer agent. Use the tools provided to do the software engineering tasks. Your token usage is being tracked.
 
+To begin, use the `list_files` tool to understand the project structure.
+
 Always use relative paths from the project directory when working with files.
 
 Available tools:
