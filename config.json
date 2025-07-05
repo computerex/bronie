@@ -1,5 +1,5 @@
 {
-  "agent_model": "anthropic/claude-3.5-sonnet",
+  "agent_model": "deepseek/deepseek-chat-v3-0324",
   "code_model": "anthropic/claude-3.5-sonnet",
   "ignored_dirs": [
     ".cache",
