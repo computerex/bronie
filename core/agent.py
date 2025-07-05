@@ -1,6 +1,7 @@
 import json
 import sys
 import os
+import re
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.pretty import Pretty
@@ -12,6 +13,65 @@ from core.input_handler import get_user_input
 from core.interrupts import handle_keyboard_interrupt
 
 console = Console()
+
+# ------------------------------------------------------------
+# Helper
+# ------------------------------------------------------------
+
+# A tolerant JSON parser for model responses that may contain
+# markdown fences, extra logging text, or minor formatting issues.
+def robust_json_parse(text: str):
+    """Attempt to load JSON from *text* while handling common issues.
+
+    1. Strips markdown code fences (``` or ```json).
+    2. Falls back to the substring between the first "{" and the last "}".
+    3. Removes trailing commas that would invalidate JSON.
+
+    Returns the parsed object on success, otherwise ``None``.
+    """
+    stripped = text.strip()
+
+    # --------------------------------------------------------
+    # Strip markdown code fences if present
+    # --------------------------------------------------------
+    if stripped.startswith("```"):
+        # Drop the opening fence (and an optional language tag)
+        fence_end = stripped.find("\n")
+        if fence_end != -1:
+            stripped = stripped[fence_end + 1 :]
+        # Remove closing fence
+        if stripped.endswith("```"):
+            stripped = stripped[:-3]
+        stripped = stripped.strip()
+
+    # --------------------------------------------------------
+    # First attempt: direct parse
+    # --------------------------------------------------------
+    try:
+        return json.loads(stripped)
+    except json.JSONDecodeError:
+        pass
+
+    # --------------------------------------------------------
+    # Second attempt: parse the substring between first { and last }
+    # --------------------------------------------------------
+    start = stripped.find("{")
+    end = stripped.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidate = stripped[start : end + 1]
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            pass
+
+    # --------------------------------------------------------
+    # Third attempt: remove trailing commas before } or ]
+    # --------------------------------------------------------
+    sanitized = re.sub(r",\s*([}\]])", r"\\1", stripped)
+    try:
+        return json.loads(sanitized)
+    except json.JSONDecodeError:
+        return None
 
 class Agent:
     def __init__(self, project_dir=None, get_agent_system_prompt=None):
@@ -96,18 +156,16 @@ class Agent:
                             handle_keyboard_interrupt(console)
                             break  # Return control to input prompt after second Ctrl+C
                     
-                    try:
-                        if response.startswith("```json"):
-                            response = response[7:-3]
-                        if response.startswith("```"):
-                            response = response[3:-3]
-                        if response.endswith("```"):
-                            response = response[:-3]
-                        response_json = json.loads(response)
-                        self.messages.append({"role": "assistant", "content": [{"type": "text", "text": response}]})
-                    except json.JSONDecodeError:
+                    # ----------------------------------------------------
+                    # Robust JSON parsing of the model response
+                    # ----------------------------------------------------
+                    response_json = robust_json_parse(response)
+                    if response_json is None:
                         console.print("[bold red]Invalid JSON response[/]")
                         break  # Don't exit, just break and return to input
+
+                    # Record the *raw* response text in the conversation context
+                    self.messages.append({"role": "assistant", "content": [{"type": "text", "text": response}]})
 
                     if "tool_calls" in response_json:
                         for tool_call in response_json["tool_calls"]:

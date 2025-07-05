@@ -63,7 +63,7 @@ Use this JSON object to respond:
     ]
 }}
 
-Say nothing but the JSON object. The chat message space is precious so do not repeat back code in your context unnecessarily. Always use talk_to_user tool to talk to the user.
+Say nothing but the JSON object. The chat message space is precious so do not repeat back code in your context unnecessarily. Always use talk_to_user tool to talk to the user. Don't use talk_to_user prematurely, gather available information first before using the tool, do all your homework before reaching out to the user.
 """
     return {
         "role": "system",

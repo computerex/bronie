@@ -1,4 +1,4 @@
 {
-  "agent_model": "google/gemini-2.5-flash-preview-05-20",
+  "agent_model": "anthropic/claude-3.5-sonnet",
   "code_model": "anthropic/claude-3.5-sonnet"
 }
