@@ -117,7 +117,7 @@ def edit_file(target_file, instructions, images=None):
         images (list, optional): List of base64-encoded images for visual context. Defaults to None.
         
     Returns:
-        tuple: (stdout, stderr) - Empty strings on success, error messages on failure
+        tuple: (stdout, stderr) - On success, stdout contains the git-style diff (may be empty if no changes) while stderr is empty; on failure, stderr contains the error message.
     """
     try:
         # Ensure the path is relative to the current working directory
@@ -134,6 +134,8 @@ def edit_file(target_file, instructions, images=None):
             code = ""
 
         print(f"Instructions: {instructions}", flush=True)
+        
+        diff_output = ""
         
         # Construct messages for the chat
         messages = [
@@ -189,8 +191,8 @@ def edit_file(target_file, instructions, images=None):
             print(f"\nWriting to {filepath}", flush=True)
             with open(filepath, 'w+') as f:
                 f.write(new_code)
-            return "", ""
+            return diff_output, ""
         else:
-            return "", ""
+            return diff_output, ""
     except Exception as e:
         return f"Error editing file: {e}", ""
