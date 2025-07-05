@@ -127,8 +127,15 @@ class Agent:
                                     # Use the tool registry instead of if-else chain
                                     tool_result = dispatch_tool(tool_call["name"], **tool_call["parameters"])
                                 
+                                # Record the tool result in the conversation so the model can see it
                                 self.messages.append({"role": "assistant", "content": [{"type": "text", "text": json.dumps(tool_result)}]})
-                                
+
+                                # If tool_result signals an error, explicitly add a readable message for the model
+                                if isinstance(tool_result, dict) and "error" in tool_result:
+                                    error_note = f"Tool call '{tool_call['name']}' failed: {tool_result['error']}"
+                                    self.messages.append({"role": "assistant", "content": error_note})
+                                    console.print(Text(error_note, style="yellow"))
+
                                 if tool_call["name"] == "talk_to_user":
                                     if isinstance(tool_result, dict) and "type" in tool_result and "content" in tool_result:
                                         if tool_result["type"] == "markdown":
@@ -146,6 +153,11 @@ class Agent:
                             except KeyboardInterrupt:
                                 handle_keyboard_interrupt(console)
                                 break  # Return control to input prompt after Ctrl+C
+                            except Exception as e:
+                                # Catch-all for unexpected tool errors and inform both console and conversation
+                                err_msg = f"Tool call '{tool_call['name']}' raised an exception: {e}"
+                                console.print(Text(err_msg, style="red"))
+                                self.messages.append({"role": "assistant", "content": err_msg})
 
                     if terminate:
                         break

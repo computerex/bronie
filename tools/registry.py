@@ -51,7 +51,12 @@ def dispatch_tool(name: str, **kwargs) -> Any:
     than what the AI expects.
     """
     if name not in TOOLS:
-        raise ValueError(f"Unknown tool: {name}")
+        # Gracefully handle unknown tools instead of crashing the program.
+        # Log a warning and return a structured error so the caller can
+        # decide how to surface it to the user.
+        warning_msg = f"⚠️ Unknown tool requested: {name} – skipping"
+        print(warning_msg)
+        return {"error": warning_msg}
     
     tool_function = TOOLS[name]
     
