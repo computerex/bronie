@@ -127,11 +127,17 @@ def complete_chat_stream(model: Optional[str] = None, **kwargs) -> Iterator[str]
             
             # start of streaming: set response_text
             response_text = ""  # move near top of try before for chunk loop
-            for chunk in response:
-                if chunk.choices[0].delta.content is not None:
-                    part = chunk.choices[0].delta.content
-                    yield part
-                    response_text += part
+
+            try:
+                for chunk in response:
+                    if chunk.choices[0].delta.content is not None:
+                        part = chunk.choices[0].delta.content
+                        yield part
+                        response_text += part
+            except KeyboardInterrupt:
+                # Gracefully stop streaming and propagate interrupt to caller
+                return
+
             # after streaming loop
             output_tokens_calc = _count_tokens_text(response_text)
             from main import track_tokens
