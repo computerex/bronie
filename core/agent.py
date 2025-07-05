@@ -1,5 +1,7 @@
 import json
 import sys
+import select
+import time
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.pretty import Pretty
@@ -10,6 +12,19 @@ from tools.registry import dispatch_tool
 from core.input_handler import get_user_input
 
 console = Console()
+
+# Global timestamp for double Ctrl+C detection
+_last_interrupt_time = 0.0
+
+def _handle_keyboard_interrupt():
+    """Handle Ctrl+C; exit if pressed twice within 1 second."""
+    global _last_interrupt_time
+    current_time = time.time()
+    if current_time - _last_interrupt_time < 1:
+        console.print("\n[red]Double Ctrl+C detected - exiting[/]")
+        sys.exit(0)
+    _last_interrupt_time = current_time
+    console.print("\n[yellow]Press Ctrl+C again within 1 second to exit[/]")
 
 class Agent:
     def __init__(self, project_dir=None, get_agent_system_prompt=None):
@@ -74,10 +89,18 @@ class Agent:
                                 sys.stdout.write(chunk)
                                 sys.stdout.flush()
                                 response += chunk
+                                # Detect Ctrl+D (EOF) to abort streaming
+                                if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
+                                    data = sys.stdin.read(1)
+                                    if data == '' or data == '\x04':
+                                        raise EOFError
                         print()  # New line after streaming completes
                     except KeyboardInterrupt:
-                        console.print("\n[yellow]Model response interrupted - returning to input[/]")
-                        break  # Break out of the tool execution loop, return to input
+                        _handle_keyboard_interrupt()
+                        break  # Return control to input prompt after first Ctrl+C
+                    except EOFError:
+                        console.print("\n[yellow]Model response interrupted by Ctrl+D - returning to input[/]")
+                        break  # Break out to input
                     except Exception as e:
                         console.print("[yellow]Streaming failed, falling back to regular completion[/]")
                         try:
@@ -86,8 +109,8 @@ class Agent:
                             }, model=agent_model)
                             console.print(Markdown(response))
                         except KeyboardInterrupt:
-                            console.print("\n[yellow]Model response interrupted - returning to input[/]")
-                            break  # Break out of the tool execution loop, return to input
+                            _handle_keyboard_interrupt()
+                            break  # Return control to input prompt after second Ctrl+C
                     
                     try:
                         if response.startswith("```json"):
@@ -134,12 +157,12 @@ class Agent:
                                 else:
                                     console.print(Pretty(tool_result))
                             except KeyboardInterrupt:
-                                console.print("\n[yellow]Tool execution interrupted - returning to input[/]")
-                                break  # Break out of tool execution, return to input
+                                _handle_keyboard_interrupt()
+                                break  # Return control to input prompt after Ctrl+C
 
                     if terminate:
                         break
 
             except KeyboardInterrupt:
-                console.print("\n[yellow]Interrupt detected - returning to input[/]")
-                continue  # Continue the main loop instead of exiting 
+                _handle_keyboard_interrupt()
+                continue  # Return to top of main loop

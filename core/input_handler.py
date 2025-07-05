@@ -14,13 +14,11 @@ import token_state
 
 console = Console()
 
-# Global last-interrupt timestamp for double Ctrl+C detection
-# (Placed before other imports so linters group it with stdlib)
+# Timestamp of the last Ctrl+C to detect double-tap within 1 second
 _last_interrupt_time = 0.0
 
 def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, messages):
     """Enhanced user input processing with prompt_toolkit multiline support"""
-    global _last_interrupt_time
     
     token_count = count_tokens(messages)
     
@@ -135,13 +133,16 @@ def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, mes
         
         return user_input, False
     
+    except EOFError:
+        # Ctrl+D at the prompt: just treat as empty input (ignore)
+        console.print("[yellow]Ctrl+D pressed (no active model) – nothing to cancel[/]")
+        return None, False
     except KeyboardInterrupt:
+        global _last_interrupt_time
         current_time = time.time()
-        # Second interrupt within 1 second? -> exit.
         if current_time - _last_interrupt_time < 1:
-            console.print("\n[red]Double interrupt detected - exiting[/]")
+            console.print("\n[red]Double Ctrl+C detected - exiting[/]")
             sys.exit(0)
-        # First interrupt: save timestamp and inform user.
         _last_interrupt_time = current_time
         console.print("\n[yellow]Press Ctrl+C again within 1 second to exit[/]")
         return None, False
