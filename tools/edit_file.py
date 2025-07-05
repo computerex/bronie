@@ -113,6 +113,19 @@ def diff(a: str, b: str) -> str:
     return '\n'.join(diff_lines)
 
 def edit_file(filename, instruction, images=None):
+    """
+    Edit a file by applying changes based on natural language instructions.
+    Supports both text-based editing and visual editing with attached images.
+    Creates directories if they don't exist and creates new files if they don't exist.
+    
+    Args:
+        filename (str): Relative path to the file to edit (from project directory)
+        instruction (str): Natural language description of what changes to make
+        images (list, optional): List of base64-encoded images for visual context. Defaults to None.
+        
+    Returns:
+        tuple: (stdout, stderr) - Empty strings on success, error messages on failure
+    """
     try:
         # Ensure the path is relative to the current working directory
         # which should be the project directory set in main.py

@@ -3,14 +3,24 @@ import os
 def read_file(filename, start_line=None, end_line=None):
     """
     Read the contents of a file with optional start and end line parameters.
+    Supports reading entire files or specific line ranges.
+    Handles encoding errors gracefully and provides detailed file information.
     
     Args:
-        filename (str): Path to the file to read
-        start_line (int, optional): Line number to start reading from (1-indexed). Defaults to None.
-        end_line (int, optional): Line number to end reading at (1-indexed). Defaults to None.
+        filename (str): Relative path to the file to read (from project directory)
+        start_line (int, optional): Line number to start reading from (1-indexed). Defaults to None (start of file).
+        end_line (int, optional): Line number to end reading at (1-indexed). Defaults to None (end of file).
         
     Returns:
-        str: Contents of the file or specified lines
+        str or dict: 
+            - If no line range specified: Returns file contents as string
+            - If line range specified: Returns dict with:
+                - filename: File path
+                - total_lines: Total number of lines in file
+                - start_line: First line read (1-indexed)
+                - end_line: Last line read (1-indexed)
+                - lines: List of dicts with line_number and text
+            - Error string if file cannot be read
     """
     try:
         # Ensure the path is relative to the current working directory

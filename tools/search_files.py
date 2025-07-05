@@ -5,22 +5,23 @@ from .config import IGNORED_DIRS
 
 def search_files(pattern, directory='.'):
     """
-    Search for files by regex patterns.
-    Automatically ignores common dependency directories.
+    Search for files by regex patterns in their names and optionally their contents.
+    Automatically ignores common dependency directories (node_modules, .git, etc.).
+    Searches both filenames and file contents for matches.
     
     Args:
-        pattern (str): Regex pattern to match against file names
-        directory (str, optional): Directory to search in. Defaults to current directory.
+        pattern (str): Regex pattern to match against file names and optionally file contents
+        directory (str, optional): Directory to search in (relative to project directory). Defaults to current directory.
         
     Returns:
         dict: Search results containing:
             - status: 'success' or 'error'
             - message: Error message if status is 'error'
             - pattern: Search pattern used
-            - directory: Directory searched
+            - directory: Directory searched (absolute path)
             - matches: List of dicts containing:
-                - filename: Relative file path
-                - matched_lines: List of dicts with line_number and line_text
+                - filename: Relative file path (from search directory)
+                - matched_lines: List of dicts with line_number and line_text (if content matches found)
     """
     try:
         # Compile the regex pattern

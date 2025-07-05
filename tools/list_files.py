@@ -20,13 +20,22 @@ def count_lines(file_path):
 
 def list_files(directory_path='.'):
     """
-    List files in a directory with line counts.
+    List files and directories in a specified path with detailed information.
+    Provides file sizes, line counts, and type information.
+    Automatically ignores common dependency directories (node_modules, .git, etc.).
     
     Args:
-        directory_path (str, optional): Path to the directory. Defaults to current directory.
+        directory_path (str, optional): Relative path to the directory to list (from project directory). Defaults to current directory.
         
     Returns:
-        dict: Dictionary containing path and list of file/directory entries
+        dict: Dictionary containing:
+            - path: Absolute path of the directory listed
+            - entries: List of dicts containing:
+                - name: File or directory name
+                - type: 'file' or 'directory'
+                - size: File size in bytes (0 for directories)
+                - lines: Number of lines in file (0 for directories)
+            - error: Error message if operation fails
     """
     try:
         # Convert to absolute path if relative

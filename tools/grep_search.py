@@ -9,17 +9,18 @@ from rich.table import Table
 def grep_search(pattern, file_pattern="*"):
     """
     Search for patterns in files using ripgrep or a Python-based alternative.
-    Automatically ignores common dependency directories.
+    Automatically ignores common dependency directories (node_modules, .git, etc.).
+    Supports regex patterns and file glob patterns for filtering.
     
     Args:
-        pattern (str): The pattern to search for
-        file_pattern (str, optional): File pattern to search in. Defaults to "*".
+        pattern (str): The regex pattern to search for in file contents
+        file_pattern (str, optional): File glob pattern to search in (e.g., "*.py", "*.js"). Defaults to "*" (all files).
         
     Returns:
         list: List of dictionaries containing matches with keys:
-              - filename: relative path to the file
-              - line_number: line number of the match
-              - line_text: the matched line content
+              - filename: relative path to the file (from project directory)
+              - line_number: line number of the match (1-indexed)
+              - line_text: the matched line content (with whitespace preserved)
     """
     try:
         # Get current working directory (project directory)

@@ -4,14 +4,17 @@ from rich.markdown import Markdown
 
 def talk_to_user(message):
     """
-    Communicate with the user by returning message in a panel format. Cedes control back to the user.
-    Should be the last tool in the chain since it will return control to the user.
+    Communicate with the user by returning a message in a panel format.
+    This tool cedes control back to the user and should be the last tool in a chain.
+    Useful for providing final results, asking for user input, or displaying important information.
     
     Args:
-        message (str): Message to send to the user
+        message (str): Message to send to the user (supports markdown formatting)
         
     Returns:
-        dict: Dictionary containing message type ('panel') and content
+        dict: Dictionary containing:
+            - type: Always 'panel'
+            - content: The message content to display
     """
     return {'type': 'panel', 'content': message}
 
