@@ -6,15 +6,6 @@ DEFAULT_AGENT_MODEL = 'openai/gpt-4.1'
 DEFAULT_CODE_MODEL = 'anthropic/claude-3.5-sonnet'
 CONFIG_FILE = 'config.json'
 
-# Common dependency and environment directories to ignore
-IGNORED_DIRS = {
-    'env', 'venv', '.env', 'node_modules', 'vendor',
-    '__pycache__', '.git', '.idea', '.vscode'
-}
-
-# Convert IGNORED_DIRS to glob pattern for ripgrep
-IGNORED_DIRS_GLOB = '!{' + ','.join(IGNORED_DIRS) + '}'
-
 def _load_config():
     try:
         if os.path.exists(CONFIG_FILE):
@@ -48,3 +39,24 @@ def set_code_model(model):
     config = _load_config()
     config['code_model'] = model
     _save_config(config)
+
+# Default directories to ignore
+DEFAULT_IGNORED_DIRS = {
+    'env', 'venv', '.env', 'node_modules', 'vendor',
+    '__pycache__', '.git', '.idea', '.vscode'
+}
+
+def get_ignored_dirs():
+    config = _load_config()
+    return set(config.get('ignored_dirs', DEFAULT_IGNORED_DIRS))
+
+def set_ignored_dirs(dirs):
+    config = _load_config()
+    config['ignored_dirs'] = list(dirs)
+    _save_config(config)
+
+# Load ignored directories from config
+IGNORED_DIRS = get_ignored_dirs()
+
+# Convert IGNORED_DIRS to glob pattern for ripgrep
+IGNORED_DIRS_GLOB = '!{' + ','.join(IGNORED_DIRS) + '}'

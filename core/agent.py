@@ -31,30 +31,12 @@ def robust_json_parse(text: str):
     """
     stripped = text.strip()
 
-    # --------------------------------------------------------
-    # Strip markdown code fences if present
-    # --------------------------------------------------------
-    if stripped.startswith("```"):
-        # Drop the opening fence (and an optional language tag)
-        fence_end = stripped.find("\n")
-        if fence_end != -1:
-            stripped = stripped[fence_end + 1 :]
-        # Remove closing fence
-        if stripped.endswith("```"):
-            stripped = stripped[:-3]
-        stripped = stripped.strip()
-
-    # --------------------------------------------------------
-    # First attempt: direct parse
-    # --------------------------------------------------------
     try:
         return json.loads(stripped)
     except json.JSONDecodeError:
         pass
 
-    # --------------------------------------------------------
-    # Second attempt: parse the substring between first { and last }
-    # --------------------------------------------------------
+    # find the first { and the last }
     start = stripped.find("{")
     end = stripped.rfind("}")
     if start != -1 and end != -1 and end > start:
@@ -64,14 +46,13 @@ def robust_json_parse(text: str):
         except json.JSONDecodeError:
             pass
 
-    # --------------------------------------------------------
-    # Third attempt: remove trailing commas before } or ]
-    # --------------------------------------------------------
-    sanitized = re.sub(r",\s*([}\]])", r"\\1", stripped)
-    try:
-        return json.loads(sanitized)
-    except json.JSONDecodeError:
-        return None
+    FIX_PROMPT = """You need to fix this JSON object. Please fix it such that it cleanly decodes. Output only the fixed JSON object, no other text."""
+    json_fixed = complete_chat(messages=[
+        {"role": "system", "content": FIX_PROMPT},
+        {"role": "user", "content": stripped}
+    ], model="gpt-4.1-mini", response_format={"type": "json_object"})
+    print('Using gpt-4.1-mini to fix JSON')
+    return json.loads(json_fixed)
 
 class Agent:
     def __init__(self, project_dir=None, get_agent_system_prompt=None):
