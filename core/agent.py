@@ -156,8 +156,8 @@ class Agent:
                                 if tool_call["name"] == "edit_file" and current_images:
                                     tool_result = dispatch_tool(
                                         tool_call["name"], 
-                                        filename=tool_call["parameters"]["filename"],
-                                        editing_instructions=tool_call["parameters"]["editing_instructions"],
+                                        target_file=tool_call["parameters"]["target_file"],
+                                        instructions=tool_call["parameters"]["instructions"],
                                         images=current_images
                                     )
                                 else:
