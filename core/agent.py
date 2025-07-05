@@ -90,6 +90,12 @@ class Agent:
                             break  # Break out of the tool execution loop, return to input
                     
                     try:
+                        if response.startswith("```json"):
+                            response = response[7:-3]
+                        if response.startswith("```"):
+                            response = response[3:-3]
+                        if response.endswith("```"):
+                            response = response[:-3]
                         response_json = json.loads(response)
                         self.messages.append({"role": "assistant", "content": [{"type": "text", "text": response}]})
                     except json.JSONDecodeError:
