@@ -1,6 +1,6 @@
 import json
 import sys
-import select
+import os
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.pretty import Pretty
@@ -76,20 +76,17 @@ class Agent:
                                 sys.stdout.write(chunk)
                                 sys.stdout.flush()
                                 response += chunk
-                                # Detect Ctrl+D (EOF) to abort streaming
-                                if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-                                    data = sys.stdin.read(1)
-                                    if data == '' or data == '\x04':
-                                        raise EOFError
+                                # Note: Ctrl+D detection removed as it's not compatible with Windows
+                                # Users can use Ctrl+C to interrupt instead
                         print()  # New line after streaming completes
                     except KeyboardInterrupt:
                         handle_keyboard_interrupt(console)
                         break  # Return control to input prompt after first Ctrl+C
                     except EOFError:
-                        console.print("\n[yellow]Model response interrupted by Ctrl+D - returning to input[/]")
+                        console.print("\n[yellow]Model response interrupted - returning to input[/]")
                         break  # Break out to input
                     except Exception as e:
-                        console.print("[yellow]Streaming failed, falling back to regular completion[/]")
+                        console.print(f"[yellow]Streaming failed, falling back to regular completion: {e}[/]")
                         try:
                             response = complete_chat(messages=self.messages, response_format={
                                 "type": "json_object"
