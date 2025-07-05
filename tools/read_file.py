@@ -96,25 +96,3 @@ def read_file(filename, start_line=None, end_line=None):
             
     except Exception as e:
         return f"Error reading file: {e}"
-
-
-def format_file_contents(file_data):
-    """
-    Format file contents as a rich Table for display
-    
-    Args:
-        file_data (dict): Dictionary returned by read_file()
-        
-    Returns:
-        rich.table.Table: Formatted table for display
-    """
-    from rich.table import Table
-    
-    table = Table(title=f"File: {file_data['filename']}")
-    table.add_column("Line", justify="right", style="cyan")
-    table.add_column("Content", style="white")
-    
-    for line in file_data['lines']:
-        table.add_row(str(line['line_number']), line['text'].rstrip('\n'))
-        
-    return table

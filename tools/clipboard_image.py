@@ -4,7 +4,7 @@ import os
 import sys
 import tempfile
 import subprocess
-from PIL import Image, ImageGrab
+from PIL import ImageGrab
 
 def get_clipboard_image():
     """

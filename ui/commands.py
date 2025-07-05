@@ -7,7 +7,6 @@ from tools.clipboard_image import get_clipboard_image, is_image_in_clipboard
 from tools.config import set_agent_model, set_code_model, get_agent_model, get_code_model
 # Avoid importing llm at module level to prevent circular dependencies.
 # We'll import list_openrouter_models lazily within handle_list_models_command when needed.
-import token_state
 
 console = Console()
 
@@ -36,6 +35,15 @@ def handle_clear_command(context):
     msgs.clear()
     msgs.append(context["get_agent_system_prompt"]())
     context["attached_images"] = []
+
+    # Reset token counters stored in main module (if available)
+    try:
+        import main as _main
+        _main.input_tokens = 0
+        _main.output_tokens = 0
+    except ImportError:
+        pass
+
     console.print("[green]Message history and token counts cleared[/]")
     return True
 

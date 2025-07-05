@@ -2,30 +2,28 @@ import time
 import sys
 from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.keys import Keys
 from prompt_toolkit.styles import Style
 from prompt_toolkit.formatted_text import HTML
-from prompt_toolkit.validation import Validator, ValidationError
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from ui.commands import handle_ui_command
-import token_state
+import tiktoken
 
 console = Console()
 
 # Timestamp of the last Ctrl+C to detect double-tap within 1 second
 _last_interrupt_time = 0.0
 
+# Cache encoder once for efficiency
+ENCODER = tiktoken.encoding_for_model("gpt-4")
+
 def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, messages):
     """Enhanced user input processing with prompt_toolkit multiline support"""
     
     token_count = count_tokens(messages)
     
-    session_input = token_state.input_tokens
-    session_output = token_state.output_tokens
-    session_total = session_input + session_output
-    console.print(f"[cyan]Token count:[/] {token_count} | [yellow]Session:[/] {session_input:,} in, {session_output:,} out, {session_total:,} total")
+    console.print(f"[cyan]Token count:[/] {token_count}")
     
     mode_text = "[green]Multiline[/]" if multiline_mode[0] else "[blue]Single-line[/]"
     
@@ -84,7 +82,7 @@ def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, mes
         complete_while_typing=False,
         validate_while_typing=False,
         key_bindings=kb,
-        prompt_continuation=lambda width, line_number, wrap_count: '.' * width
+        prompt_continuation=lambda width, line_number, _: '.' * width
     )
     
     try:
@@ -149,16 +147,12 @@ def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, mes
 
 def count_tokens(messages):
     """Count tokens in messages - moved from main.py"""
-    import tiktoken
-    encoding = tiktoken.encoding_for_model("gpt-4")
     num_tokens = 0
     for message in messages:
-        # Count tokens in the message content
         if isinstance(message["content"], str):
-            num_tokens += len(encoding.encode(message["content"]))
+            num_tokens += len(ENCODER.encode(message["content"]))
         elif isinstance(message["content"], list):
-            # Handle list of content (e.g., assistant responses)
             for content in message["content"]:
                 if isinstance(content, dict) and "text" in content:
-                    num_tokens += len(encoding.encode(content["text"]))
+                    num_tokens += len(ENCODER.encode(content["text"]))
     return num_tokens 

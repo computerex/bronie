@@ -4,8 +4,6 @@ import subprocess
 from pathlib import Path
 from .config import IGNORED_DIRS_GLOB, IGNORED_DIRS
 
-from rich.table import Table
-
 def grep_search(pattern, file_pattern="*"):
     """
     Search for patterns in files using ripgrep or a Python-based alternative.
@@ -101,27 +99,3 @@ def grep_search(pattern, file_pattern="*"):
             'line_number': 0,
             'line_text': f"Error during search: {e}"
         }]
-
-def create_search_results_table(results):
-    """
-    Create a rich Table from grep search results.
-    
-    Args:
-        results (list): List of dictionaries with search results
-        
-    Returns:
-        Table: Rich Table object for display
-    """
-    table = Table(show_header=True, header_style="bold")
-    table.add_column("File")
-    table.add_column("Line", justify="right")
-    table.add_column("Content")
-    
-    for result in results:
-        table.add_row(
-            result['filename'],
-            str(result['line_number']),
-            result['line_text']
-        )
-    
-    return table

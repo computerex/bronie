@@ -2,9 +2,12 @@ import sys
 import os
 from dotenv import load_dotenv
 from core.agent import Agent
-import token_state
 
 load_dotenv()
+
+# Simple in-process token counters (replaces token_state module)
+input_tokens = 0
+output_tokens = 0
 
 def track_tokens(arg1, arg2=None):
     """Track token usage.
@@ -25,8 +28,9 @@ def track_tokens(arg1, arg2=None):
     
     # Debug
     
-    token_state.input_tokens += prompt_tokens
-    token_state.output_tokens += completion_tokens
+    global input_tokens, output_tokens
+    input_tokens += prompt_tokens
+    output_tokens += completion_tokens
 
 def get_agent_system_prompt():
     from tools.registry import TOOLS
@@ -96,11 +100,11 @@ def main(project_dir=None):
     agent.run()
     
     # Show final token usage summary
-    if token_state.input_tokens > 0 or token_state.output_tokens > 0:
+    if input_tokens > 0 or output_tokens > 0:
         print(f"\n🎯 Final Session Token Usage:")
-        print(f"   Input tokens:  {token_state.input_tokens:,}")
-        print(f"   Output tokens: {token_state.output_tokens:,}")
-        print(f"   Total tokens:  {token_state.input_tokens + token_state.output_tokens:,}")
+        print(f"   Input tokens:  {input_tokens:,}")
+        print(f"   Output tokens: {output_tokens:,}")
+        print(f"   Total tokens:  {input_tokens + output_tokens:,}")
         print("=" * 50)
     else:
         print("\nToken tracking not available (no usage data from API)")

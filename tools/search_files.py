@@ -98,35 +98,3 @@ def search_files(pattern, directory='.'):
             'directory': directory,
             'matches': []
         }
-
-def format_search_results(results):
-    """
-    Format search results as a rich.Table
-    
-    Args:
-        results (dict): Results from search_files()
-        
-    Returns:
-        rich.Table: Formatted table of results
-    """
-    from rich.table import Table
-    
-    table = Table(title=f"Search Results for '{results['pattern']}'")
-    table.add_column("File", style="cyan")
-    table.add_column("Matches", style="green")
-    
-    if results['status'] == 'error':
-        table.add_row("ERROR", results['message'])
-        return table
-        
-    for match in results['matches']:
-        filename = match['filename']
-        if match['matched_lines']:
-            lines = [f"Line {m['line_number']}: {m['line_text']}" 
-                    for m in match['matched_lines']]
-            match_text = "\n".join(lines)
-        else:
-            match_text = "(filename match only)"
-        table.add_row(filename, match_text)
-        
-    return table

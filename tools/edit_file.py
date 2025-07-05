@@ -161,10 +161,8 @@ def edit_file(filename, instruction, images=None):
         code_model = get_code_model()
         
         # Stream the response in real-time
-        full_response = ""
         for chunk in complete_chat_stream(messages=messages, model=code_model):
             print(chunk, end="", flush=True)
-            full_response += chunk
         
         # Get final complete response for processing
         response = get_thinking(instruction, code, images, model=code_model)
