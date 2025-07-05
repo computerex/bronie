@@ -1,6 +1,11 @@
 import time
 import sys
-from prompt_toolkit import prompt
+from prompt_toolkit import PromptSession
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.keys import Keys
+from prompt_toolkit.styles import Style
+from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.validation import Validator, ValidationError
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
@@ -9,9 +14,13 @@ import token_state
 
 console = Console()
 
+# Global last-interrupt timestamp for double Ctrl+C detection
+# (Placed before other imports so linters group it with stdlib)
+_last_interrupt_time = 0.0
+
 def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, messages):
-    """Handle user input processing - exactly the same behavior as current code"""
-    last_interrupt_time = 0
+    """Enhanced user input processing with prompt_toolkit multiline support"""
+    global _last_interrupt_time
     
     token_count = count_tokens(messages)
     
@@ -44,58 +53,103 @@ def get_user_input(multiline_mode, attached_images, get_agent_system_prompt, mes
         border_style="green"
     ))
     
-    lines = []
-    mode_switched = False
-    while True:
-        try:
-            # Use simple prompt for each line
-            line = prompt('')
-            
-            # Create context for UI commands
-            context = {
-                "multiline_mode": multiline_mode,
-                "attached_images": attached_images,
-                "get_agent_system_prompt": get_agent_system_prompt,
-                "messages": messages
-            }
-            
-            # Handle UI commands
-            ui_result = handle_ui_command(line, context)
-            if ui_result:
-                mode_switched = True
-                break
-                
-            if multiline_mode[0]:
-                if line.strip() == ":end":
-                    if lines:
-                        break  # End multiline input
-                    else:
-                        console.print("[yellow]Empty input, please try again[/]")
-                        continue
-                else:
-                    lines.append(line)
-            else:
-                lines = [line]
-                break
-                
-        except KeyboardInterrupt:
-            current_time = time.time()
-            if current_time - last_interrupt_time < 1:
-                console.print("\n[red]Double interrupt detected - exiting[/]")
-                sys.exit(0)
-            last_interrupt_time = current_time
-            console.print("\n[yellow]Press Ctrl+C again within 1 second to exit[/]")
-            continue
-    
-    if mode_switched:
-        return None, True  # Skip processing when just toggling modes
+    # -------------------------------------------------------------------
+    # Key bindings
+    # In multiline mode, pressing <Enter> on a line that consists solely
+    # of ":end" should immediately accept the entire buffer. We create a
+    # small, local KeyBindings object for this behaviour and only attach
+    # it when multiline mode is active, leaving single-line behaviour
+    # untouched.
+    # -------------------------------------------------------------------
+    kb = None
+    if multiline_mode[0]:
+        kb = KeyBindings()
 
-    if not lines:  # Handle empty input
-        console.print("[yellow]Empty input, please try again[/]")
-        return None, False
+        @kb.add("enter")
+        def _(event):
+            """Custom <Enter> behaviour for multiline mode."""
+            buf = event.app.current_buffer
+            doc = buf.document
+            # If the current line is just ':end', accept the buffer.
+            if doc.current_line.strip() == ":end":
+                # Remove the ':end' line before accepting.
+                buf.delete_before_cursor(len(doc.current_line))
+                # Accept the buffer and return the text.
+                event.app.exit(result=buf.text.rstrip("\n"))
+            else:
+                # Default action: insert a newline.
+                buf.insert_text("\n")
+
+    # Session setup with the (optional) custom key bindings
+    session = PromptSession(
+        multiline=multiline_mode[0],
+        complete_while_typing=False,
+        validate_while_typing=False,
+        key_bindings=kb,
+        prompt_continuation=lambda width, line_number, wrap_count: '.' * width
+    )
     
-    user_input = "\n".join(lines)
-    return user_input, False
+    try:
+        context = {
+            "multiline_mode": multiline_mode,
+            "attached_images": attached_images,
+            "get_agent_system_prompt": get_agent_system_prompt,
+            "messages": messages
+        }
+        
+        # Get user input
+        user_input = session.prompt(
+            HTML('<ansired>➤</ansired> '),
+            style=Style.from_dict({
+                '': '#ansigreen',
+            })
+        )
+
+        # --------------------------------------------------------------
+        # Multiline handling: detect the special ":end" marker
+        # When the session is in multiline mode, users can finish their
+        # message by typing ":end" on a new line. Prompt-toolkit will
+        # return the full buffer including that marker. We strip the
+        # marker **and everything on that final line** so that the agent
+        # receives only the actual message content.
+        # --------------------------------------------------------------
+        if multiline_mode[0]:
+            stripped_input = user_input.rstrip("\n")  # remove trailing newlines for inspection
+            lines = stripped_input.splitlines()
+            if lines and lines[-1].strip() == ":end":
+                # Remove the last line (":end") and rebuild the input
+                lines = lines[:-1]
+                user_input = "\n".join(lines).rstrip()
+
+        # After removing ':end', a completely empty buffer means the user
+        # pressed enter without any actual content. In that case, prompt
+        # them again rather than sending an empty message.
+        if not user_input.strip():
+            console.print("[yellow]Empty input, please try again[/]")
+            return None, False
+        
+        # Process UI commands
+        # UI commands (those starting with ':') are only evaluated when we
+        # are **not** in multiline mode, because within multiline mode any
+        # leading ':' characters should be treated as part of the actual
+        # message (except the special ':end' handled above).
+        if not multiline_mode[0]:
+            ui_result = handle_ui_command(user_input, context)
+            if ui_result:
+                return None, True
+        
+        return user_input, False
+    
+    except KeyboardInterrupt:
+        current_time = time.time()
+        # Second interrupt within 1 second? -> exit.
+        if current_time - _last_interrupt_time < 1:
+            console.print("\n[red]Double interrupt detected - exiting[/]")
+            sys.exit(0)
+        # First interrupt: save timestamp and inform user.
+        _last_interrupt_time = current_time
+        console.print("\n[yellow]Press Ctrl+C again within 1 second to exit[/]")
+        return None, False
 
 def count_tokens(messages):
     """Count tokens in messages - moved from main.py"""
