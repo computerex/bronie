@@ -5,7 +5,12 @@ from typing import Iterator, List, Optional, Dict, Tuple
 from openai import OpenAI
 import tiktoken
 
-from .tools.config import get_agent_model as config_get_agent_model, get_code_model as config_get_code_model, get_providers
+from .tools.config import (
+    get_agent_model as config_get_agent_model, 
+    get_code_model as config_get_code_model, 
+    get_light_model as config_get_light_model,
+    get_providers
+)
 
 # Add helper function to count tokens
 ENCODER = tiktoken.encoding_for_model("gpt-4")
@@ -127,6 +132,10 @@ def get_agent_model() -> str:
 def get_code_model() -> str:
     """Get the configured code model"""
     return config_get_code_model()
+
+def get_light_model() -> str:
+    """Get the configured light model"""
+    return config_get_light_model()
 
 def complete_chat_stream(model: Optional[str] = None, **kwargs) -> Iterator[str]:
     """

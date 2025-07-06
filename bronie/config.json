@@ -1,6 +1,7 @@
 {
   "agent_model": "openrouter/deepseek/deepseek-chat-v3-0324",
   "code_model": "openrouter/anthropic/claude-3.7-sonnet",
+  "light_model": "openrouter/openai/gpt-4.1-nano",
   "providers": [
     {
       "name": "openai",

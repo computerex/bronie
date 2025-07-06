@@ -4,7 +4,10 @@ from rich.text import Text
 from rich.table import Table
 from ..tools.exec_shell import exec_shell
 from ..tools.clipboard_image import get_clipboard_image, is_image_in_clipboard
-from ..tools.config import set_agent_model, set_code_model, get_agent_model, get_code_model
+from ..tools.config import (
+    set_agent_model, set_code_model, set_light_model,
+    get_agent_model, get_code_model, get_light_model
+)
 from .. import token_tracker
 # Avoid importing llm at module level to prevent circular dependencies.
 # We'll import list_openrouter_models lazily within handle_list_models_command when needed.
@@ -86,16 +89,30 @@ def handle_set_code_model_command(line_stripped, context):
         return True
     return False
 
+def handle_set_light_model_command(line_stripped, context):
+    """Handle :set-light-model command - set the light utility model"""
+    if line_stripped.startswith(":set-light-model "):
+        model = line_stripped[17:].strip()
+        if model:
+            set_light_model(model)
+            console.print(Text(f"✅ Light model set to: {model}", style="green"))
+        else:
+            console.print(Text("❌ Please provide a model name", style="red"))
+        return True
+    return False
+
 def handle_show_models_command(line_stripped, context):
     """Handle :models command - show current model settings"""
     if line_stripped == ":models":
         current_agent = get_agent_model()
         current_code = get_code_model()
+        current_light = get_light_model()
         console.print(Panel(
             f"[bold]Current Model Settings:[/bold]\n"
             f"🤖 Agent Model: [cyan]{current_agent}[/cyan]\n"
-            f"💻 Code Model: [cyan]{current_code}[/cyan]\n\n"
-            f"[dim]Use :set-agent-model <model> or :set-code-model <model> to change[/dim]\n"
+            f"💻 Code Model:  [cyan]{current_code}[/cyan]\n"
+            f"💡 Light Model: [cyan]{current_light}[/cyan]\n\n"
+            f"[dim]Use :set-agent-model <model>, :set-code-model <model>, or :set-light-model <model> to change[/dim]\n"
             f"[dim]Use :list-models to see available models[/dim]",
             title="Model Configuration",
             border_style="blue"
@@ -164,5 +181,7 @@ def handle_ui_command(line, context):
         return handle_set_agent_model_command(line_stripped, context)
     elif line_stripped.startswith(":set-code-model "):
         return handle_set_code_model_command(line_stripped, context)
+    elif line_stripped.startswith(":set-light-model "):
+        return handle_set_light_model_command(line_stripped, context)
     
     return None  # Not a UI command 

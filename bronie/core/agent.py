@@ -7,7 +7,7 @@ from rich.markdown import Markdown
 from rich.pretty import Pretty
 from rich.panel import Panel
 from rich.text import Text
-from ..llm import complete_chat, complete_chat_stream, get_agent_model
+from ..llm import complete_chat, complete_chat_stream, get_agent_model, get_light_model
 from ..tools.registry import dispatch_tool
 from .input_handler import get_user_input
 from .interrupts import handle_keyboard_interrupt
@@ -50,7 +50,7 @@ def robust_json_parse(text: str):
     json_fixed = complete_chat(messages=[
         {"role": "system", "content": FIX_PROMPT},
         {"role": "user", "content": stripped}
-    ], model="openrouter/openai/gpt-4.1-mini", response_format={"type": "json_object"})
+    ], model=get_light_model(), response_format={"type": "json_object"})
     print('Fixing model JSON...')
     return json.loads(json_fixed)
 

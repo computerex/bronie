@@ -9,6 +9,7 @@ CONFIG_FILE = os.path.join(_PACKAGE_DIR, 'config.json')
 # Default model configurations
 DEFAULT_AGENT_MODEL = 'openai/gpt-4o'
 DEFAULT_CODE_MODEL = 'anthropic/claude-3.5-sonnet'
+DEFAULT_LIGHT_MODEL = 'openrouter/google/gemini-flash-1.5'
 
 def _load_config():
     try:
@@ -42,6 +43,15 @@ def get_code_model():
 def set_code_model(model):
     config = _load_config()
     config['code_model'] = model
+    _save_config(config)
+
+def get_light_model():
+    config = _load_config()
+    return config.get('light_model', DEFAULT_LIGHT_MODEL)
+
+def set_light_model(model):
+    config = _load_config()
+    config['light_model'] = model
     _save_config(config)
 
 def get_providers():

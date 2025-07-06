@@ -29,6 +29,7 @@ def get_input_instructions_panel(mode_text, project_dir):
         "- [bold]:list-models[/bold] to see available OpenRouter models\n"
         "- [bold]:set-agent-model <model>[/bold] to change agent model\n"
         "- [bold]:set-code-model <model>[/bold] to change code editing model\n"
+        "- [bold]:set-light-model <model>[/bold] to change light utility model\n"
         "- [bold]:end[/bold] on a new line when finished in multiline mode",
         title="Input Instructions",
         border_style="green"
