@@ -96,7 +96,7 @@ def handle_show_models_command(line_stripped, context):
             f"🤖 Agent Model: [cyan]{current_agent}[/cyan]\n"
             f"💻 Code Model: [cyan]{current_code}[/cyan]\n\n"
             f"[dim]Use :set-agent-model <model> or :set-code-model <model> to change[/dim]\n"
-            f"[dim]Use :list-models to see available OpenRouter models[/dim]",
+            f"[dim]Use :list-models to see available models[/dim]",
             title="Model Configuration",
             border_style="blue"
         ))
@@ -104,15 +104,15 @@ def handle_show_models_command(line_stripped, context):
     return False
 
 def handle_list_models_command(line_stripped, context):
-    """Handle :list-models command - show available OpenRouter models"""
+    """Handle :list-models command - show available models"""
     if line_stripped == ":list-models":
         # Import here to avoid circular import issues during application startup
-        from ..llm import list_openrouter_models
+        from ..llm import list_models
         try:
-            models = list_openrouter_models()
+            models = list_models()
             
             # Create a table to display models
-            table = Table(title="Available OpenRouter Models")
+            table = Table(title="Available Models")
             table.add_column("Model ID", style="cyan", no_wrap=True)
             table.add_column("Name", style="green")
             table.add_column("Provider", style="yellow")

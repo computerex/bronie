@@ -1,10 +1,14 @@
 import json
 import os
 
+# Determine the absolute path to config.json within the package
+_TOOL_DIR = os.path.dirname(os.path.abspath(__file__))
+_PACKAGE_DIR = os.path.dirname(_TOOL_DIR)
+CONFIG_FILE = os.path.join(_PACKAGE_DIR, 'config.json')
+
 # Default model configurations
-DEFAULT_AGENT_MODEL = 'openai/gpt-4.1'
+DEFAULT_AGENT_MODEL = 'openai/gpt-4o'
 DEFAULT_CODE_MODEL = 'anthropic/claude-3.5-sonnet'
-CONFIG_FILE = 'config.json'
 
 def _load_config():
     try:
@@ -39,6 +43,17 @@ def set_code_model(model):
     config = _load_config()
     config['code_model'] = model
     _save_config(config)
+
+def get_providers():
+    config = _load_config()
+    return config.get('providers', [])
+
+def get_provider(provider_name):
+    providers = get_providers()
+    for p in providers:
+        if p['name'] == provider_name:
+            return p
+    return None
 
 # Default directories to ignore
 DEFAULT_IGNORED_DIRS = {

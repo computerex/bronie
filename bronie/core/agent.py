@@ -50,7 +50,7 @@ def robust_json_parse(text: str):
     json_fixed = complete_chat(messages=[
         {"role": "system", "content": FIX_PROMPT},
         {"role": "user", "content": stripped}
-    ], model="gpt-4.1-mini", response_format={"type": "json_object"})
+    ], model="openrouter/openai/gpt-4.1-mini", response_format={"type": "json_object"})
     print('Fixing model JSON...')
     return json.loads(json_fixed)
 
@@ -127,6 +127,10 @@ class Agent:
                     except EOFError:
                         console.print("\n[yellow]Model response interrupted - returning to input[/]")
                         break  # Break out to input
+                    except ValueError as e:
+                        # Handle API key errors gracefully
+                        console.print(Text(f"❌ Error: {e}", style="red"))
+                        break
                     except Exception as e:
                         console.print(f"[yellow]Streaming failed, falling back to regular completion: {e}[/]")
                         try:
@@ -137,6 +141,10 @@ class Agent:
                         except KeyboardInterrupt:
                             handle_keyboard_interrupt(console)
                             break  # Return control to input prompt after second Ctrl+C
+                        except ValueError as e:
+                            # Also handle API key errors in the fallback
+                            console.print(Text(f"❌ Error: {e}", style="red"))
+                            break
                     
                     # ----------------------------------------------------
                     # Robust JSON parsing of the model response
