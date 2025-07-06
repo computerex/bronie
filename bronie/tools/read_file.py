@@ -47,7 +47,7 @@ def read_file(filename, start_line=None, end_line=None):
                 return f"Invalid end line: {end_line}. Must be an integer."
         
         # Read the entire file
-        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+        with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
             lines = f.readlines()
             
         total_lines = len(lines)

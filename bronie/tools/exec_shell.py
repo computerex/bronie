@@ -16,7 +16,7 @@ def exec_shell(command):
             - stderr (str): Standard error from command (with trailing whitespace stripped)
             - formatted_output (str): Combined stdout and stderr output (with whitespace stripped)
     """
-    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+    result = subprocess.run(command, shell=True, capture_output=True, text=True, encoding='utf-8')
     
     # Strip whitespace but preserve line structure
     stdout = result.stdout.rstrip()

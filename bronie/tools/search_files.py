@@ -68,15 +68,15 @@ def search_files(regex_pattern, directory='.'):
                     
                     # Search file contents if it's a text file
                     try:
-                        with open(full_path, 'r', encoding='utf-8') as f:
+                        with open(full_path, 'r', encoding='utf-8', errors='replace') as f:
                             for line_num, line in enumerate(f, 1):
                                 if regex.search(line):
                                     match_result['matched_lines'].append({
                                         'line_number': line_num,
                                         'line_text': line.rstrip()
                                     })
-                    except (UnicodeDecodeError, IOError):
-                        # Skip binary files or files we can't read
+                    except IOError:
+                        # Skip files we can't read
                         pass
                         
                     matches.append(match_result)

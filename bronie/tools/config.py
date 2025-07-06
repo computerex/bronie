@@ -14,7 +14,7 @@ DEFAULT_LIGHT_MODEL = 'openrouter/google/gemini-flash-1.5'
 def _load_config():
     try:
         if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, 'r') as f:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
     except Exception:
         pass
@@ -22,7 +22,7 @@ def _load_config():
 
 def _save_config(config):
     try:
-        with open(CONFIG_FILE, 'w') as f:
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
             json.dump(config, f, indent=2)
     except Exception:
         pass

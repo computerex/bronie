@@ -38,7 +38,7 @@ def grep_search(pattern, file_pattern="*"):
                 "."  # Search in current directory
             ]
             
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, encoding='utf-8')
             if result.returncode in [0, 1]:  # rg returns 1 if no matches found
                 if not result.stdout:
                     return []
@@ -72,7 +72,7 @@ def grep_search(pattern, file_pattern="*"):
                 
             if path.is_file():
                 try:
-                    with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+                    with open(path, 'r', encoding='utf-8', errors='replace') as f:
                         for i, line in enumerate(f, 1):
                             if re.search(pattern, line):
                                 # Convert path to be relative to project directory

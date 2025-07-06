@@ -128,7 +128,7 @@ def edit_file(target_file, instructions, images=None):
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
                 code = f.read()
         except FileNotFoundError:
             code = ""
@@ -189,7 +189,7 @@ def edit_file(target_file, instructions, images=None):
                         console.print(line)
 
             print(f"\nWriting to {filepath}", flush=True)
-            with open(filepath, 'w+') as f:
+            with open(filepath, 'w+', encoding='utf-8') as f:
                 f.write(new_code)
             return diff_output, ""
         else:

@@ -13,7 +13,7 @@ def count_lines(file_path):
         int: Number of lines in the file
     """
     try:
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
             return sum(1 for _ in f)
     except Exception:
         return 0
