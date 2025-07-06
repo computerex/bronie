@@ -1,5 +1,5 @@
 import subprocess
-from tools.talk_to_user import talk_to_user
+from .talk_to_user import talk_to_user
 
 def exec_shell(command):
     """

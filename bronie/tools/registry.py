@@ -20,7 +20,7 @@ def discover_tools() -> Dict[str, Callable]:
             module_name = filename[:-3]  # Remove .py extension
             try:
                 # Import the module
-                module = importlib.import_module(f'tools.{module_name}')
+                module = importlib.import_module(f'.{module_name}', package='bronie.tools')
                 
                 # Look for a function with the same name as the module
                 if hasattr(module, module_name):

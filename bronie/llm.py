@@ -5,7 +5,7 @@ from typing import Iterator, List, Optional, Dict
 from openai import OpenAI
 import tiktoken
 
-from tools.config import get_agent_model as config_get_agent_model, get_code_model as config_get_code_model
+from .tools.config import get_agent_model as config_get_agent_model, get_code_model as config_get_code_model
 
 DEFAULT_AGENT_MODEL = "openai/gpt-4.1"
 DEFAULT_CODE_MODEL = "anthropic/claude-3.5-sonnet"
@@ -54,7 +54,7 @@ def set_agent_model(model_id: str) -> None:
     Args:
         model_id: OpenRouter model identifier
     """
-    from tools.config import set_agent_model as config_set_agent_model
+    from .tools.config import set_agent_model as config_set_agent_model
     config_set_agent_model(model_id)
     
 def set_code_model(model_id: str) -> None:
@@ -63,7 +63,7 @@ def set_code_model(model_id: str) -> None:
     Args:
         model_id: OpenRouter model identifier  
     """
-    from tools.config import set_code_model as config_set_code_model
+    from .tools.config import set_code_model as config_set_code_model
     config_set_code_model(model_id)
 
 def get_agent_model() -> str:
@@ -140,7 +140,7 @@ def complete_chat_stream(model: Optional[str] = None, **kwargs) -> Iterator[str]
 
             # after streaming loop
             output_tokens_calc = _count_tokens_text(response_text)
-            from token_tracker import track_tokens
+            from .token_tracker import track_tokens
             track_tokens(input_tokens_msg, output_tokens_calc)
             
             return  # Success - exit the retry loop
@@ -217,7 +217,7 @@ def complete_chat(model: Optional[str] = None, **kwargs) -> str:
             # Same for complete_chat non-streaming: after we get text_response
             input_tokens_msg = _count_tokens_messages(kwargs.get("messages", []))
             output_tokens_calc = _count_tokens_text(text_response)
-            from token_tracker import track_tokens
+            from .token_tracker import track_tokens
             track_tokens(input_tokens_msg, output_tokens_calc)
             
             return text_response

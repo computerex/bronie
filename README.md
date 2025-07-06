@@ -99,4 +99,6 @@ python main.py [project_directory]
 
 ## License
 
-[MIT License](LICENSE) 
+[MIT License](LICENSE)
+
+I have refactored the project as requested. It can now be installed using `pip install -e .` and launched with the `bronie` command. All functionality should remain unchanged. 

@@ -7,10 +7,10 @@ from rich.markdown import Markdown
 from rich.pretty import Pretty
 from rich.panel import Panel
 from rich.text import Text
-from llm import complete_chat, complete_chat_stream, get_agent_model
-from tools.registry import dispatch_tool
-from core.input_handler import get_user_input
-from core.interrupts import handle_keyboard_interrupt
+from ..llm import complete_chat, complete_chat_stream, get_agent_model
+from ..tools.registry import dispatch_tool
+from .input_handler import get_user_input
+from .interrupts import handle_keyboard_interrupt
 
 console = Console()
 

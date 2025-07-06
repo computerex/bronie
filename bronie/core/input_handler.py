@@ -7,10 +7,10 @@ from prompt_toolkit.formatted_text import HTML
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
-from ui.commands import handle_ui_command
-from core.interrupts import handle_keyboard_interrupt
+from ..ui.commands import handle_ui_command
+from .interrupts import handle_keyboard_interrupt
 import tiktoken
-import token_tracker
+from .. import token_tracker
 
 console = Console()
 

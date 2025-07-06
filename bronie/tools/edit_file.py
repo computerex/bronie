@@ -1,10 +1,10 @@
 import base64
 import os
 from difflib import unified_diff
-from llm import complete_chat_stream
-from coders.editblock_coder import get_edits, apply_edits
+from ..llm import complete_chat_stream
+from ..coders.editblock_coder import get_edits, apply_edits
 from rich.console import Console
-from tools.config import get_code_model
+from .config import get_code_model
 import sys
 
 

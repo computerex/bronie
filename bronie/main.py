@@ -1,13 +1,14 @@
 import sys
 import os
 from dotenv import load_dotenv
-from core.agent import Agent
-import token_tracker
+from .core.agent import Agent
+from . import token_tracker
+import typer
 
 load_dotenv()
 
 def get_agent_system_prompt():
-    from tools.registry import TOOLS
+    from .tools.registry import TOOLS
     import inspect
 
     # Dynamically generate tool descriptions
@@ -38,13 +39,13 @@ def get_agent_system_prompt():
         tool_descriptions.append(tool_desc)
 
     PROMPT = f"""
-You are a software engineer agent. Use the tools provided to do the software engineering tasks. Your token usage is being tracked.
+You are a software engineer hired with a very handsome salary. You are eager to impress your boss and get a promotion. Use the tools provided to do the software engineering tasks.
 
 To begin, use the `list_files` tool to understand the project structure.
 
 Always use relative paths from the project directory when working with files.
 
-Note: The edit_file tool doesn't know about rest of code base so pass it everything necessary to make the changes as part of the instructions. You must pass all of the user's instructions to the edit_file tool.
+Note: The edit_file tool doesn't know about rest of code base so pass it everything necessary to make the changes as part of the instructions. You must pass all of the specifics of the instructions to the edit_file tool.
 
 Available tools:
 {chr(10).join(tool_descriptions)}
@@ -63,16 +64,19 @@ Use this JSON object to respond:
     ]
 }}
 
-Say nothing but the JSON object. The chat message space is precious so do not repeat back code in your context unnecessarily. Always use talk_to_user tool to talk to the user. Don't use talk_to_user prematurely, gather available information first before using the tool, do all your homework before reaching out to the user.
+Say nothing but the JSON object. Always use talk_to_user tool to talk. Don't talk until all the work is done.
 """
     return {
         "role": "system",
         "content": PROMPT
     }
 
-def main(project_dir=None):
+app = typer.Typer()
+
+@app.command()
+def main(project_dir: str = typer.Argument(None, help="The project directory to work in.")):
     """Main entry point - simplified to just setup and run agent"""
-    if project_dir:
+    if project_dir is not None:
         os.chdir(project_dir)
     
     agent = Agent(project_dir=project_dir, get_agent_system_prompt=get_agent_system_prompt)
@@ -90,5 +94,4 @@ def main(project_dir=None):
         print("\nToken tracking not available (no usage data from API)")
 
 if __name__ == "__main__":
-    project_dir = sys.argv[1] if len(sys.argv) > 1 else None
-    main(project_dir)
+    app()
