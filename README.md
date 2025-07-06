@@ -2,6 +2,8 @@
 
 Bronie is an AI-powered assistant that seamlessly integrates with your development environment. By using Large Language Models (LLMs) and a suite of specialized tools, Bronie helps you understand, navigate, and modify code directly from your terminal.
 
+![Bronie in action](https://i.postimg.cc/SsKLDc7B/image.png)
+
 ## Overview
 
 Bronie works by connecting an AI model with your local project directory, allowing it to perform coding tasks through natural language commands. It has deep contextual understanding of your codebase and can execute precise modifications without leaving your terminal.
