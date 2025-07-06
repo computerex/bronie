@@ -6,3 +6,4 @@
 - Do not talk to me until you are done. First person perspective prompts.
 - One tool at a time.
 - Exec command stream output
+- Talk to user last tool
