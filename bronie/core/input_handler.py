@@ -22,6 +22,7 @@ def get_input_instructions_panel(mode_text, project_dir):
         "[dim]Available commands:\n"
         "- [bold]:m[/bold] to toggle input mode\n"
         "- [bold]:clear[/bold] to reset message history\n"
+        "- [bold]:compress[/bold] to compress recent messages\n"
         "- [bold]:e <shell command>[/bold] to execute a shell command directly\n"
         "- [bold]:image[/bold] to paste image from clipboard\n"
         "- [bold]:drop[/bold] to remove the last attached image\n"

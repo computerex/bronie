@@ -65,6 +65,130 @@ def handle_drop_command(context):
         console.print(Text("❌ No images to remove", style="red"))
     return True
 
+def handle_compress_command(context, n=10):
+    """Handle :compress command - compress older messages based on recent context."""
+    # Import here to avoid circular dependencies
+    from ..llm import complete_chat
+    import json
+
+    messages = context["messages"]
+    
+    # We need a system prompt, something to compress, and recent context.
+    # So at least n + 2 messages to be meaningful.
+    if len(messages) < n + 2:
+        console.print(f"[yellow]Not enough messages to perform a meaningful compression. Need at least {n+2} messages.[/yellow]")
+        return True
+
+    console.print(f"[yellow]Analyzing recent conversation and compressing older history...[/]")
+
+    system_prompt = messages[0]
+    history = messages[1:]
+    
+    # The last N messages are the recent context, which we will NOT compress.
+    recent_messages = history[-n:]
+    # The messages before that are the ones we will compress.
+    messages_to_compress = history[:-n]
+
+    if not messages_to_compress:
+        console.print("[yellow]No older messages to compress.[/yellow]")
+        return True
+
+    def format_messages_for_prompt(msgs):
+        """Helper to format a list of message objects into a string."""
+        formatted = []
+        for msg in msgs:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            text_content = ""
+            if isinstance(content, list):
+                # Handle complex content like images
+                for part in content:
+                    if part.get("type") == "text":
+                        text_content += part.get("text", "") + "\n"
+            else:
+                text_content = str(content)
+            
+            # For JSON tool calls, pretty print for clarity
+            # The text_content is a stringified JSON, so we check for a keyword
+            if '"tool_calls"' in text_content:
+                try:
+                    # Attempt to load and format it as pretty json
+                    json_content = json.loads(text_content)
+                    text_content = json.dumps(json_content, indent=2)
+                except json.JSONDecodeError:
+                    pass # Keep as-is if not valid json
+
+            formatted.append(f"<{role}>\n{text_content.strip()}\n</{role}>")
+        return "\n---\n".join(formatted)
+
+    recent_context_str = format_messages_for_prompt(recent_messages)
+    to_compress_str = format_messages_for_prompt(messages_to_compress)
+
+    compression_prompt = f"""
+Your task is to act as a memory compression module for a software engineering AI agent.
+You will be given the most RECENT part of a conversation to understand the agent's current task.
+Then, you will be given the OLDER part of the conversation.
+You must compress the OLDER part into a concise summary, preserving all information *that is relevant to the RECENT conversation*.
+
+Key information to preserve from the OLDER conversation includes:
+- Previously discussed file paths, filenames, and code snippets that are related to the current task.
+- Key decisions, requirements, or constraints that were established earlier.
+- Important context or background information that the agent might need to remember.
+
+Eliminate conversational filler, redundant interactions, and information that is no longer relevant to the agent's current focus, as defined by the RECENT conversation.
+The output should be a single block of text that is a coherent summary of the compressed history.
+
+**RECENT CONVERSATION (Your guide for what's important):**
+---
+{recent_context_str}
+---
+
+**OLDER CONVERSATION HISTORY (Compress this part):**
+---
+{to_compress_str}
+---
+
+Now, provide the compressed summary of the OLDER conversation history. Output *only* the summary text, without any introductory phrases.
+"""
+
+    try:
+        compressed_content = complete_chat(
+            messages=[{"role": "user", "content": compression_prompt}],
+            model=get_light_model()
+        )
+
+        # Create the new summary message to insert
+        summary_message = {
+            "role": "system", 
+            "content": f"The preceding conversation has been summarized to save tokens. Key details relevant to the current task were preserved:\n\n{compressed_content}"
+        }
+
+        # Reconstruct the final message list
+        new_messages = []
+        new_messages.append(system_prompt)
+        new_messages.append(summary_message)
+        new_messages.extend(recent_messages) # Add the uncompressed recent messages back
+
+        # Replace the original messages in the main message list *in-place*
+        original_len = len(messages)
+        messages.clear()
+        messages.extend(new_messages)
+        new_len = len(messages)
+
+        console.print(Panel(
+            f"[bold]Compression complete.[/bold]\n"
+            f"Original message count: {original_len}\n"
+            f"New message count: {new_len}\n"
+            f"Compressed {len(messages_to_compress)} message(s) into 1 summary.",
+            title="Context Compressed",
+            border_style="yellow"
+        ))
+
+    except Exception as e:
+        console.print(Text(f"An error occurred during compression: {e}", style="red"))
+
+    return True
+
 def handle_set_agent_model_command(line_stripped, context):
     """Handle :set-agent-model command - set the agent model"""
     if line_stripped.startswith(":set-agent-model "):
@@ -169,6 +293,8 @@ def handle_ui_command(line, context):
         return handle_mode_toggle(context)
     elif line_stripped == ":clear":
         return handle_clear_command(context)
+    elif line_stripped == ":compress":
+        return handle_compress_command(context)
     elif line_stripped == ":image":
         return handle_image_command(context)
     elif line_stripped == ":drop":
